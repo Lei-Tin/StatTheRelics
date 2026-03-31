@@ -14,19 +14,19 @@ namespace StatTheRelics.RelicStats {
                 var defs = asm.GetTypes()
                     .Where(t => !t.IsAbstract && typeof(BaseRelicStats).IsAssignableFrom(t))
                     .Select(t => Activator.CreateInstance(t) as BaseRelicStats)
-                    .Where(d => d != null);
+                    .Where(d => d != null && !string.IsNullOrEmpty(d.TypeName));
                 foreach (var def in defs) {
-                    registry[def.TypeName] = def;
+                    registry[def!.TypeName] = def;
                 }
             } catch { }
         }
 
-        public static BaseRelicStats GetDefinition(string typeName) {
+        public static BaseRelicStats? GetDefinition(string? typeName) {
             if (typeName != null && registry.TryGetValue(typeName, out var def)) return def;
             return null;
         }
 
-        public static IReadOnlyList<string> GetDefaultCounters(string typeName) {
+        public static IReadOnlyList<string> GetDefaultCounters(string? typeName) {
             if (typeName != null && registry.TryGetValue(typeName, out var def)) return def.DefaultCounters;
             return defaultCounters;
         }

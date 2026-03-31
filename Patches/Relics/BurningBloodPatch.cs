@@ -9,7 +9,7 @@ namespace StatTheRelics.Patches.Relics {
     // Capture actual healing done by Burning Blood (clamped to current HP) by wrapping the async task.
     [HarmonyPatch(typeof(BurningBlood), nameof(BurningBlood.AfterCombatVictory))]
     public static class BurningBloodPatch {
-        class HpState { public object Creature; public int Before; }
+        class HpState { public object? Creature { get; set; } public int Before { get; set; } }
 
         static void Prefix(BurningBlood __instance, ref object __state) {
             try {
@@ -24,28 +24,14 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 var creature = ( __state as HpState )?.Creature ?? __instance?.Owner?.Creature;
                 var beforeHp = ( __state as HpState )?.Before ?? GetHp(creature);
-                ModLog.Info($"BurningBloodPatch: Postfix start creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, taskNull={__result == null}");
-                __result = Wrap(__result, __instance, creature, beforeHp);
+                var afterHp = GetHp(creature);
+                var healed = Math.Max(0, afterHp - beforeHp);
+                ModLog.Info($"BurningBloodPatch: Postfix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, afterHp={afterHp}, healed={healed}");
+                if (healed > 0 && __instance != null) RelicTracker.AddAmount(__instance, "HP Healed", healed);
             } catch { }
         }
 
-        static async Task Wrap(Task original, BurningBlood relic, object creature, int beforeHp) {
-            try {
-                if (original != null) {
-                    ModLog.Info("BurningBloodPatch: awaiting original task");
-                    await original;
-                }
-            } finally {
-                try {
-                    var afterHp = GetHp(creature);
-                    var healed = Math.Max(0, afterHp - beforeHp);
-                    ModLog.Info($"BurningBloodPatch: after await creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, afterHp={afterHp}, healed={healed}");
-                    if (healed > 0) RelicTracker.AddAmount(relic, "HP Healed", healed);
-                } catch { }
-            }
-        }
-
-        static int GetHp(object creature) {
+        static int GetHp(object? creature) {
             try {
                 if (creature == null) return 0;
                 var type = creature.GetType();

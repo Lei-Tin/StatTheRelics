@@ -7,3 +7,5 @@ godot
 
 .vs
 bin
+
+*.txt

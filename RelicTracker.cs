@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Diagnostics;
 using HarmonyLib;
@@ -23,7 +22,7 @@ public static class RelicTracker {
     static int runSessionId;
     static string bannerNote = string.Empty;
 
-    public static RelicData GetOrCreate(object relic) {
+    public static RelicData? GetOrCreate(object? relic) {
         var typeKey = GetTypeKey(relic);
         if (typeKey == null) return null;
         return dataByType.GetOrAdd(typeKey, _ => {
@@ -32,24 +31,15 @@ public static class RelicTracker {
         });
     }
 
-    public static void Increment(object relic, string key) {
-        try {
-            if (relic == null) return;
-            var typeKey = GetTypeKey(relic);
-            if (typeKey == null) return;
-            var d = GetOrCreate(relic);
-            var newVal = d.Counters.AddOrUpdate(key, 1, (_, old) => old + 1);
-            ModLog.Info($"RelicTracker: {typeKey} - {key} => {newVal}");
-        } catch { }
-    }
-
     public static void AddAmount(object relic, string key, int amount) {
         try {
+            MaybeRestoreLiveAfterHistory();
             if (relic == null) return;
             if (amount == 0) return;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return;
             var d = GetOrCreate(relic);
+            if (d == null) return;
             var newVal = d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
             ModLog.Info($"RelicTracker: {typeKey} - {key} += {amount} => {newVal}");
         } catch { }
@@ -62,22 +52,39 @@ public static class RelicTracker {
         runActive = true;
         historyMode = false;
         bannerNote = string.Empty;
-        ModLog.Info($"RelicTracker: counters reset for new run ({reason})");
+        RelicStatsPersistence.ClearSuspendedRunSnapshot("new run session");
+        ModLog.Info($"RelicTracker: counters reset for new run ({reason}), session={runSessionId}");
     }
 
     public static void MarkOutOfRun(string reason = "inactive") {
         runActive = false;
         historyMode = false;
-        ModLog.Info($"RelicTracker: run marked inactive ({reason})");
+        RelicStatsPersistence.ClearSuspendedRunSnapshot("mark out of run");
+        ModLog.Info($"RelicTracker: run marked inactive ({reason}), session={runSessionId}");
     }
 
     public static bool IsRunActive => runActive;
 
-    // Legacy entry point
-    public static void Reset() => StartNewRunSession("Reset()");
-
-    public static string FormatTooltipAppend(object relic) {
+    public static string FormatTooltipAppend(object? relic) {
         try {
+            // If the history UI is active but historyMode somehow isn't set, force history mode with the current history data to avoid showing live stats.
+            if (RelicStatsPersistence.HistoryViewActive && !historyMode) {
+                historyMode = true;
+                runActive = false;
+                ModLog.Info("RelicTracker: coerced into history mode because history view is active");
+            }
+
+            // If we left history view, try to restore live snapshot on first tooltip usage outside history stack.
+            if (historyMode && !RelicStatsPersistence.HistoryViewActive && !IsHistoryStack()) {
+                RelicStatsPersistence.RestoreSuspendedRunSnapshotIfAny();
+                // Fallback: if still in historyMode with no suspended snapshot, drop back to live mode to avoid showing history data.
+                if (historyMode && !RelicStatsPersistence.HistoryViewActive) {
+                    historyMode = false;
+                    runActive = true;
+                    ModLog.Info("RelicTracker: exited history mode via tooltip fallback");
+                }
+            }
+
             if (!runActive && !historyMode) return string.Empty;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return string.Empty;
@@ -104,7 +111,7 @@ public static class RelicTracker {
     }
 
     // Check if we already have data for this instance without creating new entry
-    public static bool HasData(object relic) {
+    public static bool HasData(object? relic) {
         try {
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return false;
@@ -133,7 +140,7 @@ public static class RelicTracker {
         return result;
     }
 
-    public static void LoadSnapshot(IDictionary<string, Dictionary<string,int>> snapshot, string note, bool historyMode) {
+    public static void LoadSnapshot(IDictionary<string, Dictionary<string,int>>? snapshot, string note, bool historyMode) {
         try {
             bannerNote = historyMode ? (note ?? string.Empty) : string.Empty;
             var source = snapshot ?? new Dictionary<string, Dictionary<string,int>>();
@@ -161,64 +168,9 @@ public static class RelicTracker {
     }
 
     public static class RelicPatches {
-        static readonly string[] obtainNames = new[] { "OnObtain", "OnPickup", "OnPickUp", "Obtain", "Pickup", "OnEquip", "Equip", ".ctor" };
-        static readonly string[] tooltipHints = new[] { "Tooltip", "GetDescription", "GetHoverText", "GetText", "GetTooltip" };
-        static readonly string[] effectHints = new[] { "Activate", "Use", "Trigger", "OnTrigger", "OnUse", "OnActivate", "OnPlayerTurnStart", "AtBattleStart", "OnAttack", "After", "Before", "Flash" };
-        static readonly string[] setterHints = new[] { "set_UsedThisCombat", "set_UsedThisTurn", "set_WasUsed", "set_WasUsedThisCombat", "set_WasUsedThisTurn", "set_ShouldTrigger", "set_IsUsedUp", "set_Triggered" };
-
         public static void ApplyDynamicPatches(Harmony harmony) {
             try {
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
-                    .Where(a => !a.IsDynamic && (a.GetName().Name?.StartsWith("MegaCrit") == true || a.GetName().Name?.StartsWith("MegaCrit.Sts2") == true));
-
-                foreach (var asm in assemblies) {
-                    Type[] types;
-                    try { types = asm.GetTypes(); } catch { continue; }
-                    foreach (var t in types) {
-                        if (t == null) continue;
-                        if (t.Namespace == null || !t.Namespace.Contains("MegaCrit.Sts2.Core.Models.Relics")) continue;
-                        if (t.IsAbstract) continue;
-
-                        // Patch obtain-like methods/ctors to initialize counters
-                        foreach (var on in obtainNames) {
-                            MethodBase m = null;
-                            if (on == ".ctor") {
-                                var ctors = t.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                                foreach (var c in ctors) {
-                                    try { harmony.Patch(c, postfix: new HarmonyMethod(typeof(RelicPatches).GetMethod(nameof(RelicObtainedPostfix), BindingFlags.Static | BindingFlags.NonPublic))); } catch { }
-                                }
-                                continue;
-                            }
-                            m = AccessTools.Method(t, on);
-                            if (m != null) {
-                                try { harmony.Patch(m, postfix: new HarmonyMethod(typeof(RelicPatches).GetMethod(nameof(RelicObtainedPostfix), BindingFlags.Static | BindingFlags.NonPublic))); } catch { }
-                            }
-                        }
-
-                        // Patch tooltip-like methods that return string
-                        var methods = t.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                        foreach (var m in methods) {
-                            if (m.ReturnType == typeof(string) && tooltipHints.Any(h => m.Name.IndexOf(h, StringComparison.OrdinalIgnoreCase) >= 0)) {
-                                try { harmony.Patch(m, postfix: new HarmonyMethod(typeof(RelicPatches).GetMethod(nameof(TooltipPostfix), BindingFlags.Static | BindingFlags.NonPublic))); } catch { }
-                            }
-                        }
-
-                        // Patch effect methods to increment counters
-                        foreach (var m in methods) {
-                            var isFlash = m.Name.Equals("DoActivateVisuals", StringComparison.OrdinalIgnoreCase) || m.Name.IndexOf("Flash", StringComparison.OrdinalIgnoreCase) >= 0;
-                            var nameMatch = isFlash || effectHints.Any(h => m.Name.IndexOf(h, StringComparison.OrdinalIgnoreCase) >= 0) || setterHints.Any(sh => m.Name.Equals(sh, StringComparison.OrdinalIgnoreCase));
-                            var returnsVoid = m.ReturnType == typeof(void);
-                            var returnsTask = m.ReturnType == typeof(Task) || (m.ReturnType.IsGenericType && m.ReturnType.GetGenericTypeDefinition() == typeof(Task<>));
-                            var isSetter = m.IsSpecialName && m.Name.StartsWith("set_");
-                            if (nameMatch && (returnsVoid || returnsTask || isSetter)) {
-                                var targetPrefix = isSetter ? nameof(CountSetterPrefix) : isFlash ? nameof(CountFlashPrefix) : nameof(CountPrefix);
-                                try { harmony.Patch(m, prefix: new HarmonyMethod(typeof(RelicPatches).GetMethod(targetPrefix, BindingFlags.Static | BindingFlags.NonPublic))); } catch { }
-                            }
-                        }
-                    }
-                }
-
-                // Patch base RelicModel flash methods so every relic flash is counted, even when the flash is invoked in the base class
+                // Patch base RelicModel flash methods so every relic flash is counted, even when the flash is invoked in the base class.
                 var relicModelType = AccessTools.TypeByName("MegaCrit.Sts2.Core.Models.RelicModel");
                 if (relicModelType != null) {
                     var flashMethods = relicModelType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
@@ -227,51 +179,48 @@ public static class RelicTracker {
                         try { harmony.Patch(fm, prefix: new HarmonyMethod(typeof(RelicPatches).GetMethod(nameof(CountFlashPrefix), BindingFlags.Static | BindingFlags.NonPublic))); } catch { }
                     }
                 }
-            } catch { }
-        }
 
-        static void RelicObtainedPostfix(object __instance) {
-            try {
-                GetOrCreate(__instance);
-                ModLog.Info($"RelicTracker: Relic obtained patch ran for {__instance?.GetType().FullName}");
-            } catch { }
-        }
-
-        static void TooltipPostfix(object __instance, ref string __result) {
-            try {
-                var extra = FormatTooltipAppend(__instance);
-                if (!string.IsNullOrEmpty(extra)) {
-                    __result = __result + "\n\n" + extra;
-                    ModLog.Info($"RelicTracker: appended tooltip stats for {__instance?.GetType().FullName}");
-                }
-            } catch { }
-        }
-
-        static void CountPrefix(object __instance, MethodBase __originalMethod) {
-            try {
-                var name = __originalMethod?.Name ?? "effect";
-                Increment(__instance, name);
+                ModLog.Info("RelicTracker: dynamic relic scan skipped; only base RelicModel flash patched");
             } catch { }
         }
 
         static void CountFlashPrefix(object __instance, MethodBase __originalMethod) {
             try {
-                Increment(__instance, "Flashes");
-            } catch { }
-        }
-
-        static void CountSetterPrefix(object __instance, MethodBase __originalMethod) {
-            try {
-                var name = __originalMethod?.Name ?? "setter";
-                Increment(__instance, name);
+                var tk = GetTypeKey(__instance);
+                if (tk == null) return;
+                var def = RelicStatsRegistry.GetDefinition(tk);
+                if (def != null) {
+                    var hasFlash = def.DefaultCounters?.Any(c => string.Equals(c, "Flashes", StringComparison.OrdinalIgnoreCase)) == true;
+                    if (!hasFlash) return;
+                }
+                AddAmount(__instance, "Flashes", 1);
             } catch { }
         }
 
     }
 
-    static string GetTypeKey(object relic) {
+    static readonly string relicNamespaceToken = ".Relics";
+    static string? GetTypeKey(object? relic) {
         try {
-            return relic == null ? null : relic.GetType().FullName;
+            if (relic == null) return null;
+            var type = relic.GetType();
+            var ns = type.Namespace ?? string.Empty;
+            if (ns.IndexOf(relicNamespaceToken, StringComparison.OrdinalIgnoreCase) < 0) return null;
+            return type.FullName;
         } catch { return null; }
+    }
+
+    static void MaybeRestoreLiveAfterHistory() {
+        try {
+            // Restore after a history snapshot has taken over (historyMode true) once we're out of the history UI call stack and view.
+            if (historyMode && !RelicStatsPersistence.HistoryViewActive && !IsHistoryStack()) {
+                RelicStatsPersistence.RestoreSuspendedRunSnapshotIfAny();
+                if (historyMode && !RelicStatsPersistence.HistoryViewActive) {
+                    historyMode = false;
+                    runActive = true;
+                    ModLog.Info("RelicTracker: exited history mode and resumed live counters (counter fallback)");
+                }
+            }
+        } catch { }
     }
 }
