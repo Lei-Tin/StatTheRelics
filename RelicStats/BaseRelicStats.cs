@@ -13,6 +13,15 @@ namespace StatTheRelics.RelicStats {
             return FormatDefault(DefaultCounters, counters, historyMode, bannerNote);
         }
 
+        public virtual string Format(
+            IReadOnlyDictionary<string,int> counters,
+            IReadOnlyDictionary<string,string> textStats,
+            bool historyMode,
+            string bannerNote
+        ) {
+            return Format(counters, historyMode, bannerNote);
+        }
+
         public static string FormatDefault(IReadOnlyList<string> desiredKeys, IReadOnlyDictionary<string,int> counters, bool historyMode, string bannerNote) {
             var sb = new StringBuilder();
             var keys = desiredKeys ?? DefaultFlashes;

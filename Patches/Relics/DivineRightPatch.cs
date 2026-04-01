@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
@@ -42,17 +41,13 @@ namespace StatTheRelics.Patches.Relics {
 
         static int GetStarsBaseValue(DivineRight relic) {
             try {
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                var dynamicVarsProp = relic.GetType().GetProperty("DynamicVars", flags);
-                var dynamicVars = dynamicVarsProp?.GetValue(relic);
+                var dynamicVars = ReflectionUtil.GetMemberValue(relic, "DynamicVars");
                 if (dynamicVars == null) return 0;
 
-                var starsProp = dynamicVars.GetType().GetProperty("Stars", flags);
-                var starsVar = starsProp?.GetValue(dynamicVars);
+                var starsVar = ReflectionUtil.GetMemberValue(dynamicVars, "Stars");
                 if (starsVar == null) return 0;
 
-                var baseValueProp = starsVar.GetType().GetProperty("BaseValue", flags);
-                var raw = baseValueProp?.GetValue(starsVar);
+                var raw = ReflectionUtil.GetMemberValue(starsVar, "BaseValue");
                 if (raw == null) return 0;
 
                 return Math.Max(0, Convert.ToInt32(raw));

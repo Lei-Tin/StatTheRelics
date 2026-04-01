@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
@@ -27,19 +26,20 @@ namespace StatTheRelics.Patches.Relics {
                 var afterHp = GetHp(creature);
                 var healed = Math.Max(0, afterHp - beforeHp);
                 ModLog.Info($"BurningBloodPatch: Postfix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, afterHp={afterHp}, healed={healed}");
-                if (healed > 0 && __instance != null) RelicTracker.AddAmount(__instance, "HP Healed", healed);
+                if (__instance != null && healed > 0) {
+                    RelicTracker.AddAmount(__instance, "HP Healed", healed);
+                } else if (__instance != null) {
+                    ModLog.Info("BurningBloodPatch: no positive healing this combat");
+                }
             } catch { }
         }
 
         static int GetHp(object? creature) {
             try {
                 if (creature == null) return 0;
-                var type = creature.GetType();
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-                var prop = type.GetProperty("CurrentHp", flags);
-                ModLog.Info($"BurningBloodPatch: HP via property CurrentHp -> prop={prop?.GetValue(creature)}");
-                if (prop != null) return Convert.ToInt32(prop.GetValue(creature));
+                var currentHp = ReflectionUtil.GetMemberValue(creature, "CurrentHp");
+                ModLog.Info($"BurningBloodPatch: HP via member CurrentHp -> value={currentHp}");
+                if (currentHp != null) return Convert.ToInt32(currentHp);
             } catch { 
                 ModLog.Info("BurningBloodPatch: failed to get HP via property");
             }

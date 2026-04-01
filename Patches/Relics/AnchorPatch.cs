@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
@@ -34,12 +33,10 @@ namespace StatTheRelics.Patches.Relics {
         static int GetBlock(object? creature) {
             try {
                 if (creature == null) return 0;
-                var type = creature.GetType();
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-                var prop = type.GetProperty("Block", flags) ?? type.GetProperty("CurrentBlock", flags);
-                ModLog.Info($"AnchorPatch: block via property -> prop={prop?.GetValue(creature)}");
-                if (prop != null) return Convert.ToInt32(prop.GetValue(creature));
+                var block = ReflectionUtil.GetMemberValue(creature, "Block")
+                    ?? ReflectionUtil.GetMemberValue(creature, "CurrentBlock");
+                ModLog.Info($"AnchorPatch: block via member -> value={block}");
+                if (block != null) return Convert.ToInt32(block);
             } catch {
                 ModLog.Info("AnchorPatch: failed to get block via property");
             }

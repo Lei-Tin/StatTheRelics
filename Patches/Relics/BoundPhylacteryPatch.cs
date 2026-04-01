@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
@@ -21,23 +20,19 @@ namespace StatTheRelics.Patches.Relics {
 
         static int GetSummonBaseValue(BoundPhylactery relic) {
             try {
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                var dynamicVarsProp = relic.GetType().GetProperty("DynamicVars", flags);
-                var dynamicVars = dynamicVarsProp?.GetValue(relic);
+                var dynamicVars = ReflectionUtil.GetMemberValue(relic, "DynamicVars");
                 if (dynamicVars == null) {
                     ModLog.Info("BoundPhylacteryPatch: DynamicVars not found on relic; summon value unavailable.");
                     return 0;
                 }
 
-                var summonProp = dynamicVars.GetType().GetProperty("Summon", flags);
-                var summonVar = summonProp?.GetValue(dynamicVars);
+                var summonVar = ReflectionUtil.GetMemberValue(dynamicVars, "Summon");
                 if (summonVar == null) {
                     ModLog.Info("BoundPhylacteryPatch: DynamicVars.Summon not found; summon value unavailable.");
                     return 0;
                 }
 
-                var baseValueProp = summonVar.GetType().GetProperty("BaseValue", flags);
-                var raw = baseValueProp?.GetValue(summonVar);
+                var raw = ReflectionUtil.GetMemberValue(summonVar, "BaseValue");
                 if (raw == null) {
                     ModLog.Info("BoundPhylacteryPatch: DynamicVars.Summon.BaseValue not found; summon value unavailable.");
                     return 0;

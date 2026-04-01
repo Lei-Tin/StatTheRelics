@@ -8,6 +8,7 @@ namespace StatTheRelics.RelicStats {
     internal static class RelicStatsPersistence {
         class SnapshotEnvelope {
             public Dictionary<string, Dictionary<string, int>> Counters { get; set; } = new();
+            public Dictionary<string, Dictionary<string, string>> TextStats { get; set; } = new();
             public string Note { get; set; } = string.Empty;
         }
 
@@ -22,7 +23,8 @@ namespace StatTheRelics.RelicStats {
             try {
                 ModLog.Info($"RelicStatsPersistence: SaveSnapshot invoked for {basePath}");
                 var snapshot = RelicTracker.ExportSnapshot();
-                var envelope = new SnapshotEnvelope { Counters = snapshot, Note = "" };
+                var textSnapshot = RelicTracker.ExportTextSnapshot();
+                var envelope = new SnapshotEnvelope { Counters = snapshot, TextStats = textSnapshot, Note = "" };
                 var path = SidecarPath(basePath);
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -90,6 +92,7 @@ namespace StatTheRelics.RelicStats {
                 if (RelicTracker.IsRunActive && suspendedRunSnapshot == null) {
                     suspendedRunSnapshot = new SnapshotEnvelope {
                         Counters = RelicTracker.ExportSnapshot(),
+                        TextStats = RelicTracker.ExportTextSnapshot(),
                         Note = string.Empty
                     };
                     ModLog.Info($"RelicStatsPersistence: suspended active run snapshot ({reason})");
@@ -122,8 +125,9 @@ namespace StatTheRelics.RelicStats {
         static void ApplySnapshot(SnapshotEnvelope? env, bool historyMode) {
             ModLog.Info($"RelicStatsPersistence: ApplySnapshot invoked (historyMode={historyMode})");
             var counters = env?.Counters ?? new Dictionary<string, Dictionary<string, int>>();
+            var textStats = env?.TextStats ?? new Dictionary<string, Dictionary<string, string>>();
             var note = env?.Note ?? string.Empty;
-            RelicTracker.LoadSnapshot(counters, note, historyMode);
+            RelicTracker.LoadSnapshot(counters, textStats, note, historyMode);
             ModLog.Info($"RelicStatsPersistence: applied snapshot mode={(historyMode ? "history" : "live")}, relicTypes={counters.Count}, note='{note}'");
         }
 

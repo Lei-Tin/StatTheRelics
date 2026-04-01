@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
@@ -21,10 +20,7 @@ namespace StatTheRelics.Patches.Relics {
         static int GetRoundNumber(object? combatState) {
             try {
                 if (combatState == null) return int.MaxValue;
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                var prop = combatState.GetType().GetProperty("RoundNumber", flags);
-                if (prop == null) return int.MaxValue;
-                return Convert.ToInt32(prop.GetValue(combatState));
+                return ReflectionUtil.GetIntMemberValue(combatState, "RoundNumber", int.MaxValue);
             } catch {
                 return int.MaxValue;
             }

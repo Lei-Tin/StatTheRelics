@@ -184,4 +184,24 @@ dotnet/embed_build_outputs=false
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(ModsOutputDir)" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(ModsOutputDir)\$(ModName).pck&quot;" />
 	</Target>
+
+	<Target Name="PackageModZip" AfterTargets="PostBuild">
+		<PropertyGroup>
+			<PackageRootDir>$(MSBuildProjectDirectory)\_package_tmp</PackageRootDir>
+			<PackageModDir>$(PackageRootDir)\StatTheRelics</PackageModDir>
+			<PackageZipPath>$(MSBuildProjectDirectory)\StatTheRelics_v$(ModVersion).zip</PackageZipPath>
+		</PropertyGroup>
+
+		<RemoveDir Directories="$(PackageRootDir)" />
+		<MakeDir Directories="$(PackageModDir)" />
+
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageModDir)" />
+		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(PackageModDir)" />
+		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(PackageModDir)\$(ModName).pck&quot;" />
+
+		<Delete Files="$(PackageZipPath)" ContinueOnError="true" />
+		<ZipDirectory SourceDirectory="$(PackageRootDir)" DestinationFile="$(PackageZipPath)" Overwrite="true" />
+
+		<RemoveDir Directories="$(PackageRootDir)" />
+	</Target>
 </Project>
