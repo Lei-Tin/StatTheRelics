@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Capture actual healing done by Burning Blood (clamped to current HP) by wrapping the async task.
+    // Capture actual healing done by Burning Blood
     [HarmonyPatch(typeof(BurningBlood), nameof(BurningBlood.AfterCombatVictory))]
     public static class BurningBloodPatch {
         class HpState { public object? Creature { get; set; } public int Before { get; set; } }
