@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using MegaCrit.Sts2.Core.Models;
 
 namespace StatTheRelics {
     public static class ReflectionUtil {
@@ -31,6 +32,16 @@ namespace StatTheRelics {
                 return Convert.ToInt32(raw);
             } catch {
                 return fallback;
+            }
+        }
+
+        public static string? GetCardTitle(object? cardObject) {
+            try {
+                if (cardObject is not CardModel card) return null;
+                var title = card.Title;
+                return string.IsNullOrWhiteSpace(title) ? null : title;
+            } catch {
+                return null;
             }
         }
     }

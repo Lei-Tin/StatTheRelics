@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
-using MegaCrit.Sts2.Core.Localization;
 
 namespace StatTheRelics.Patches.Relics {
     // Arcane Scroll adds one rare card when obtained; track the concrete card name.
@@ -51,6 +50,9 @@ namespace StatTheRelics.Patches.Relics {
             } catch { }
         }
 
+        // We would expect if there was a difference, it should only differ by 1
+        // But doing defensive programming here to basically pick the most suspiscious one
+        // The one that differs the most
         static string? FindAddedCard(Dictionary<string, int> before, Dictionary<string, int> after) {
             string? best = null;
             var bestDelta = 0;
@@ -92,9 +94,7 @@ namespace StatTheRelics.Patches.Relics {
         }
 
         static string GetCardDisplayName(object card) {
-            LocString? locStr = ReflectionUtil.GetMemberValue(card, "titleLocString") as LocString;
-            var name = locStr?.GetFormattedText();
-            var str = Convert.ToString(name);
+            var str = ReflectionUtil.GetCardTitle(card);
             if (!string.IsNullOrWhiteSpace(str)) return str;
             return card.GetType().Name;
         }
