@@ -1,24 +1,22 @@
 using System;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
-using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Track the transformed card (output), not the pre-transform starter card.
+    // Archaic Tooth transforms a starter card; track both the consumed and resulting card names.
     [HarmonyPatch(typeof(ArchaicTooth), "GetTranscendenceTransformedCard")]
-    public static class ArchaicToothTransformedCardPatch {
+    public static class ArchaicToothPatch {
         static void Postfix(ArchaicTooth __instance, object? starterCard, object? __result) {
             try {
                 if (__instance == null) return;
 
+                var starterName = GetCardDisplayName(starterCard);
                 var transformedName = GetCardDisplayName(__result);
-                if (!string.IsNullOrWhiteSpace(transformedName)) {
-                    RelicTracker.SetText(__instance, "Card Obtained", transformedName);
-                    var starterName = GetCardDisplayName(starterCard) ?? "null";
-                    ModLog.Info($"ArchaicToothPatch: transformed '{starterName}' -> '{transformedName}'");
-                } else {
-                    ModLog.Info("ArchaicToothPatch: transformed card resolved as null/empty");
-                }
+
+                RelicTracker.SetText(__instance, "Cards Lost", string.IsNullOrWhiteSpace(starterName) ? "Unknown" : starterName);
+                RelicTracker.SetText(__instance, "Cards Obtained", string.IsNullOrWhiteSpace(transformedName) ? "Unknown" : transformedName);
+
+                ModLog.Info($"ArchaicToothPatch: transformed '{starterName ?? "Unknown"}' -> '{transformedName ?? "Unknown"}'");
             } catch { }
         }
 

@@ -44,5 +44,45 @@ namespace StatTheRelics {
                 return null;
             }
         }
+
+        public static string? GetCardBaseTitle(object? cardObject) {
+            try {
+                if (cardObject is not CardModel card) return null;
+
+                // Prefer the localized base title because upgraded runtime title can append "+".
+                var titleLocString = GetMemberValue(card, "TitleLocString");
+                var fromLoc = GetLocStringText(titleLocString);
+                if (!string.IsNullOrWhiteSpace(fromLoc)) return NormalizeCardTitle(fromLoc);
+
+                var fallback = card.Title;
+                return string.IsNullOrWhiteSpace(fallback) ? null : NormalizeCardTitle(fallback);
+            } catch {
+                return null;
+            }
+        }
+
+        static string? GetLocStringText(object? locString) {
+            try {
+                if (locString == null) return null;
+
+                var text = GetMemberValue(locString, "Text")
+                    ?? GetMemberValue(locString, "Value")
+                    ?? GetMemberValue(locString, "Localized");
+
+                if (text is string s && !string.IsNullOrWhiteSpace(s)) return s;
+
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        static string NormalizeCardTitle(string title) {
+            var normalized = (title ?? string.Empty).Trim();
+            while (normalized.EndsWith("+", StringComparison.Ordinal)) {
+                normalized = normalized.Substring(0, normalized.Length - 1).TrimEnd();
+            }
+            return normalized;
+        }
     }
 }

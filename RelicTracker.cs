@@ -53,6 +53,31 @@ public static class RelicTracker {
         } catch { }
     }
 
+    public static void AddAmountByType(string relicTypeName, string key, int amount) {
+        try {
+            MaybeRestoreLiveAfterHistory();
+            if (string.IsNullOrWhiteSpace(relicTypeName)) return;
+            if (string.IsNullOrWhiteSpace(key)) return;
+            if (amount == 0) return;
+            if (relicTypeName.IndexOf(relicNamespaceToken, StringComparison.OrdinalIgnoreCase) < 0) return;
+
+            var d = dataByType.GetOrAdd(relicTypeName, _ => {
+                var rd = new RelicData();
+                var defaults = RelicStatsRegistry.GetDefaultCounters(relicTypeName);
+                if (defaults != null) {
+                    foreach (var defaultKey in defaults) {
+                        if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
+                    }
+                }
+                ModLog.Info($"RelicTracker: initialized counters for {relicTypeName}");
+                return rd;
+            });
+
+            var newVal = d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
+            ModLog.Info($"RelicTracker: {relicTypeName} - {key} += {amount} => {newVal}");
+        } catch { }
+    }
+
     public static void SetText(object relic, string key, string value) {
         try {
             MaybeRestoreLiveAfterHistory();
@@ -66,6 +91,26 @@ public static class RelicTracker {
             d.TextStats[key] = value;
             ModLog.Info($"RelicTracker: {instanceKey} - {key} := {value}");
         } catch { }
+    }
+
+    public static string? GetText(object relic, string key) {
+        try {
+            if (relic == null) return null;
+            if (string.IsNullOrWhiteSpace(key)) return null;
+            var instanceKey = GetInstanceKey(relic);
+            if (instanceKey == null) return null;
+            if (!dataByType.TryGetValue(instanceKey, out var d) || d == null) return null;
+            return d.TextStats.TryGetValue(key, out var value) ? value : null;
+        } catch { return null; }
+    }
+
+    public static string? GetTextByType(string relicTypeName, string key) {
+        try {
+            if (string.IsNullOrWhiteSpace(relicTypeName)) return null;
+            if (string.IsNullOrWhiteSpace(key)) return null;
+            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return null;
+            return d.TextStats.TryGetValue(key, out var value) ? value : null;
+        } catch { return null; }
     }
 
     public static void StartNewRunSession(string reason = "start") {

@@ -5,21 +5,20 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
-using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Track all card deltas by diffing deck snapshots around relic resolution.
-    [HarmonyPatch(typeof(ArcaneScroll), nameof(ArcaneScroll.AfterObtained))]
-    public static class ArcaneScrollPatch {
+    // Astrolabe transforms 3 chosen cards; infer which names left and entered the deck.
+    [HarmonyPatch(typeof(Astrolabe), nameof(Astrolabe.AfterObtained))]
+    public static class AstrolabePatch {
         static readonly ConcurrentDictionary<int, Dictionary<string, int>> beforeDeckByInstance = new();
 
-        static void Prefix(ArcaneScroll __instance) {
+        static void Prefix(Astrolabe __instance) {
             try {
                 beforeDeckByInstance[__instance.GetHashCode()] = CaptureDeckHistogram(__instance);
             } catch { }
         }
 
-        static void Postfix(ArcaneScroll __instance, Task __result) {
+        static void Postfix(Astrolabe __instance, Task __result) {
             try {
                 if (__result == null) {
                     FinalizeCardTracking(__instance);
@@ -32,21 +31,35 @@ namespace StatTheRelics.Patches.Relics {
             } catch { }
         }
 
-        static void FinalizeCardTracking(ArcaneScroll relic) {
+        static void FinalizeCardTracking(Astrolabe relic) {
             try {
                 var instanceKey = relic.GetHashCode();
                 beforeDeckByInstance.TryRemove(instanceKey, out var before);
                 before ??= new Dictionary<string, int>(StringComparer.Ordinal);
 
                 var after = CaptureDeckHistogram(relic);
+                var lostCards = FindRemovedCards(before, after);
                 var obtainedCards = FindAddedCards(before, after);
 
+                var lostText = JoinCardList(lostCards);
                 var obtainedText = JoinCardList(obtainedCards);
 
+                RelicTracker.SetText(relic, "Cards Lost", string.IsNullOrWhiteSpace(lostText) ? "Unknown" : lostText);
                 RelicTracker.SetText(relic, "Cards Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
 
-                ModLog.Info($"ArcaneScrollPatch: inferred {obtainedCards.Count} obtained cards");
+                ModLog.Info($"AstrolabePatch: inferred {lostCards.Count} lost and {obtainedCards.Count} obtained cards");
             } catch { }
+        }
+
+        static List<string> FindRemovedCards(Dictionary<string, int> before, Dictionary<string, int> after) {
+            var lost = new List<string>();
+            foreach (var kv in before) {
+                var afterVal = after.TryGetValue(kv.Key, out var a) ? a : 0;
+                var delta = kv.Value - afterVal;
+                for (var i = 0; i < delta; i++) lost.Add(kv.Key);
+            }
+            lost.Sort(StringComparer.OrdinalIgnoreCase);
+            return lost;
         }
 
         static List<string> FindAddedCards(Dictionary<string, int> before, Dictionary<string, int> after) {
@@ -65,7 +78,7 @@ namespace StatTheRelics.Patches.Relics {
             return string.Join("\n", cards);
         }
 
-        static Dictionary<string, int> CaptureDeckHistogram(ArcaneScroll relic) {
+        static Dictionary<string, int> CaptureDeckHistogram(Astrolabe relic) {
             var result = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var card in EnumerateDeckCards(relic)) {
                 var key = GetCardDisplayName(card);
@@ -75,14 +88,13 @@ namespace StatTheRelics.Patches.Relics {
             return result;
         }
 
-        static IEnumerable<object> EnumerateDeckCards(ArcaneScroll relic) {
+        static IEnumerable<object> EnumerateDeckCards(Astrolabe relic) {
             var owner = ReflectionUtil.GetMemberValue(relic, "Owner");
             if (owner == null) yield break;
 
             var deck = ReflectionUtil.GetMemberValue(owner, "Deck");
             if (deck == null) yield break;
 
-            // List of card models
             var cardsContainer = ReflectionUtil.GetMemberValue(deck, "Cards") ?? deck;
             if (cardsContainer is not IEnumerable enumerable) yield break;
 
