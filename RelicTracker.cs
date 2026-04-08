@@ -113,6 +113,13 @@ public static class RelicTracker {
         } catch { return null; }
     }
 
+    public static bool HasTrackedRelicType(string relicTypeName) {
+        try {
+            if (string.IsNullOrWhiteSpace(relicTypeName)) return false;
+            return dataByType.ContainsKey(relicTypeName);
+        } catch { return false; }
+    }
+
     public static void StartNewRunSession(string reason = "start") {
         dataByType = new ConcurrentDictionary<string, RelicData>();
         historyDataByType = new ConcurrentDictionary<string, RelicData>();

@@ -11,7 +11,7 @@ using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
     static class BeautifulBraceletSwiftTracker {
-        const string BeautifulBraceletTypeName = "MegaCrit.Sts2.Core.Models.Relics.BeautifulBracelet";
+        internal const string BeautifulBraceletTypeName = "MegaCrit.Sts2.Core.Models.Relics.BeautifulBracelet";
         const string TrackedSwiftCardsDisplayKey = "Swift Cards Enchanted";
 
         static readonly Dictionary<string, int> beforeSwift3 = new(StringComparer.Ordinal);
@@ -208,6 +208,7 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(CardModel __instance) {
             try {
                 if (__instance == null) return;
+                if (!RelicTracker.HasTrackedRelicType(BeautifulBraceletSwiftTracker.BeautifulBraceletTypeName)) return;
                 var counted = BeautifulBraceletSwiftTracker.TryCountTrackedSwift3CardPlay(__instance);
                 if (!counted) return;
                 ModLog.Info($"BeautifulBraceletCardPlayPatch: counted play for card={__instance.GetType().FullName}");
