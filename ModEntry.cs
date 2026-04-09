@@ -30,6 +30,9 @@ public class ModEntry {
             ModLog.Info($"ModEntry: initialization failed, rolling back all patches - {ex}");
             TryRollbackAllPatches();
             ModLog.Info("ModEntry: mod disabled for this session");
+
+            // Throw an exception so that mod loading fails
+            throw new Exception("StatTheRelics failed to initialize. See log for details.", ex);
         }
     } 
 

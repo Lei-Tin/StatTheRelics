@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +31,7 @@ namespace StatTheRelics.Patches.Relics {
                 if (owner == null) return;
 
                 var after = CaptureSwift3Histogram(owner);
-                var added = PositiveDelta(beforeSwift3, after);
+                var added = DeckUtil.PositiveDelta(beforeSwift3, after);
                 var mergedTracked = LoadTrackedHistogram(relic);
                 MergeInPlace(mergedTracked, added);
 
@@ -50,7 +49,7 @@ namespace StatTheRelics.Patches.Relics {
                 var tracked = LoadTrackedHistogram();
                 if (tracked.Count == 0) return false;
 
-                var cardName = GetCardDisplayName(card);
+                var cardName = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
                 if (string.IsNullOrWhiteSpace(cardName)) return false;
 
                 var isTracked = tracked.TryGetValue(cardName, out var n) && n > 0;
@@ -65,25 +64,13 @@ namespace StatTheRelics.Patches.Relics {
 
         static Dictionary<string, int> CaptureSwift3Histogram(object owner) {
             var result = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var card in EnumerateDeckCards(owner)) {
+            foreach (var card in DeckUtil.EnumerateDeckCards(owner)) {
                 if (!IsSwift3(card)) continue;
-                var name = GetCardDisplayName(card);
+                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
                 if (string.IsNullOrWhiteSpace(name)) continue;
                 result[name] = result.TryGetValue(name, out var v) ? v + 1 : 1;
             }
             return result;
-        }
-
-        static IEnumerable<object> EnumerateDeckCards(object owner) {
-            var deck = ReflectionUtil.GetMemberValue(owner, "Deck");
-            if (deck == null) yield break;
-
-            var cardsContainer = ReflectionUtil.GetMemberValue(deck, "Cards") ?? deck;
-            if (cardsContainer is not IEnumerable enumerable) yield break;
-
-            foreach (var card in enumerable) {
-                if (card != null) yield return card;
-            }
         }
 
         static bool IsSwift3(object card) {
@@ -112,22 +99,6 @@ namespace StatTheRelics.Patches.Relics {
             } catch {
                 return false;
             }
-        }
-
-        static string GetCardDisplayName(object card) {
-            var title = ReflectionUtil.GetCardBaseTitle(card) ?? ReflectionUtil.GetCardTitle(card);
-            if (!string.IsNullOrWhiteSpace(title)) return title;
-            return card.GetType().Name;
-        }
-
-        static Dictionary<string, int> PositiveDelta(Dictionary<string, int> before, Dictionary<string, int> after) {
-            var delta = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var kv in after) {
-                var beforeVal = before.TryGetValue(kv.Key, out var b) ? b : 0;
-                var add = kv.Value - beforeVal;
-                if (add > 0) delta[kv.Key] = add;
-            }
-            return delta;
         }
 
         static void MergeInPlace(Dictionary<string, int> merged, Dictionary<string, int> added) {

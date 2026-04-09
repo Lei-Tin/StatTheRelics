@@ -1,6 +1,7 @@
 using System;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
+using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
     // Archaic Tooth transforms a starter card; track both the consumed and resulting card names.
@@ -10,8 +11,8 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (__instance == null) return;
 
-                var starterName = GetCardDisplayName(starterCard);
-                var transformedName = GetCardDisplayName(__result);
+                var starterName = starterCard == null ? null : DeckUtil.GetCardDisplayName(starterCard);
+                var transformedName = __result == null ? null : DeckUtil.GetCardDisplayName(__result);
 
                 RelicTracker.SetText(__instance, "Cards Lost", string.IsNullOrWhiteSpace(starterName) ? "Unknown" : starterName);
                 RelicTracker.SetText(__instance, "Cards Obtained", string.IsNullOrWhiteSpace(transformedName) ? "Unknown" : transformedName);
@@ -20,11 +21,5 @@ namespace StatTheRelics.Patches.Relics {
             } catch { }
         }
 
-        static string? GetCardDisplayName(object? card) {
-            if (card == null) return null;
-            var title = ReflectionUtil.GetCardTitle(card);
-            if (!string.IsNullOrWhiteSpace(title)) return title;
-            return card.GetType().Name;
-        }
     }
 }

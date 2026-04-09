@@ -9,6 +9,7 @@ using HarmonyLib;
 using System.Threading.Tasks;
 using System.Threading;
 using StatTheRelics.RelicStats;
+using StatTheRelics;
 
 public static class RelicTracker {
     public class RelicData {
@@ -43,6 +44,7 @@ public static class RelicTracker {
         try {
             MaybeRestoreLiveAfterHistory();
             if (relic == null) return;
+            if (IsRelicGone(relic)) return;
             if (amount == 0) return;
             var instanceKey = GetInstanceKey(relic);
             if (instanceKey == null) return;
@@ -51,6 +53,20 @@ public static class RelicTracker {
             var newVal = d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
             ModLog.Info($"RelicTracker: {instanceKey} - {key} += {amount} => {newVal}");
         } catch { }
+    }
+
+    static bool IsRelicGone(object relic) {
+        try {
+            var isMeltedRaw = ReflectionUtil.GetMemberValue(relic, "IsMelted");
+            if (isMeltedRaw is bool isMelted && isMelted) return true;
+
+            var isUsedUpRaw = ReflectionUtil.GetMemberValue(relic, "IsUsedUp");
+            if (isUsedUpRaw is bool isUsedUp && isUsedUp) return true;
+
+            return false;
+        } catch {
+            return false;
+        }
     }
 
     public static void AddAmountByType(string relicTypeName, string key, int amount) {
@@ -82,6 +98,7 @@ public static class RelicTracker {
         try {
             MaybeRestoreLiveAfterHistory();
             if (relic == null) return;
+            if (IsRelicGone(relic)) return;
             if (string.IsNullOrWhiteSpace(key)) return;
             if (string.IsNullOrWhiteSpace(value)) return;
             var instanceKey = GetInstanceKey(relic);

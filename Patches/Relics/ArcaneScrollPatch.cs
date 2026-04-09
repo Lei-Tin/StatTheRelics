@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace StatTheRelics.Patches.Relics {
 
         static void Prefix(ArcaneScroll __instance) {
             try {
-                beforeDeckByInstance[__instance.GetHashCode()] = CaptureDeckHistogram(__instance);
+                beforeDeckByInstance[__instance.GetHashCode()] = DeckUtil.CaptureDeckHistogramFromRelicOwner(__instance);
             } catch { }
         }
 
@@ -38,63 +37,15 @@ namespace StatTheRelics.Patches.Relics {
                 beforeDeckByInstance.TryRemove(instanceKey, out var before);
                 before ??= new Dictionary<string, int>(StringComparer.Ordinal);
 
-                var after = CaptureDeckHistogram(relic);
-                var obtainedCards = FindAddedCards(before, after);
+                var after = DeckUtil.CaptureDeckHistogramFromRelicOwner(relic);
+                var obtainedCards = DeckUtil.FindAddedCards(before, after);
 
-                var obtainedText = JoinCardList(obtainedCards);
+                var obtainedText = DeckUtil.JoinCardList(obtainedCards);
 
                 RelicTracker.SetText(relic, "Cards Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
 
                 ModLog.Info($"ArcaneScrollPatch: inferred {obtainedCards.Count} obtained cards");
             } catch { }
-        }
-
-        static List<string> FindAddedCards(Dictionary<string, int> before, Dictionary<string, int> after) {
-            var obtained = new List<string>();
-            foreach (var kv in after) {
-                var beforeVal = before.TryGetValue(kv.Key, out var b) ? b : 0;
-                var delta = kv.Value - beforeVal;
-                for (var i = 0; i < delta; i++) obtained.Add(kv.Key);
-            }
-            obtained.Sort(StringComparer.OrdinalIgnoreCase);
-            return obtained;
-        }
-
-        static string JoinCardList(IReadOnlyList<string> cards) {
-            if (cards == null || cards.Count == 0) return string.Empty;
-            return string.Join("\n", cards);
-        }
-
-        static Dictionary<string, int> CaptureDeckHistogram(ArcaneScroll relic) {
-            var result = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var card in EnumerateDeckCards(relic)) {
-                var key = GetCardDisplayName(card);
-                if (string.IsNullOrWhiteSpace(key)) continue;
-                result[key] = result.TryGetValue(key, out var v) ? v + 1 : 1;
-            }
-            return result;
-        }
-
-        static IEnumerable<object> EnumerateDeckCards(ArcaneScroll relic) {
-            var owner = ReflectionUtil.GetMemberValue(relic, "Owner");
-            if (owner == null) yield break;
-
-            var deck = ReflectionUtil.GetMemberValue(owner, "Deck");
-            if (deck == null) yield break;
-
-            // List of card models
-            var cardsContainer = ReflectionUtil.GetMemberValue(deck, "Cards") ?? deck;
-            if (cardsContainer is not IEnumerable enumerable) yield break;
-
-            foreach (var card in enumerable) {
-                if (card != null) yield return card;
-            }
-        }
-
-        static string GetCardDisplayName(object card) {
-            var str = ReflectionUtil.GetCardTitle(card);
-            if (!string.IsNullOrWhiteSpace(str)) return str;
-            return card.GetType().Name;
         }
     }
 }

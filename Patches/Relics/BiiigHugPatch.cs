@@ -7,18 +7,18 @@ using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Astrolabe transforms 3 chosen cards; infer which names left and entered the deck.
-    [HarmonyPatch(typeof(Astrolabe), nameof(Astrolabe.AfterObtained))]
-    public static class AstrolabePatch {
+    // BiiigHug removes selected cards on obtain; infer and record which card names were removed.
+    [HarmonyPatch(typeof(BiiigHug), nameof(BiiigHug.AfterObtained))]
+    public static class BiiigHugPatch {
         static readonly ConcurrentDictionary<int, Dictionary<string, int>> beforeDeckByInstance = new();
 
-        static void Prefix(Astrolabe __instance) {
+        static void Prefix(BiiigHug __instance) {
             try {
                 beforeDeckByInstance[__instance.GetHashCode()] = DeckUtil.CaptureDeckHistogramFromRelicOwner(__instance);
             } catch { }
         }
 
-        static void Postfix(Astrolabe __instance, Task __result) {
+        static void Postfix(BiiigHug __instance, Task __result) {
             try {
                 if (__result == null) {
                     FinalizeCardTracking(__instance);
@@ -31,23 +31,19 @@ namespace StatTheRelics.Patches.Relics {
             } catch { }
         }
 
-        static void FinalizeCardTracking(Astrolabe relic) {
+        static void FinalizeCardTracking(BiiigHug relic) {
             try {
                 var instanceKey = relic.GetHashCode();
                 beforeDeckByInstance.TryRemove(instanceKey, out var before);
                 before ??= new Dictionary<string, int>(StringComparer.Ordinal);
 
                 var after = DeckUtil.CaptureDeckHistogramFromRelicOwner(relic);
-                var lostCards = DeckUtil.FindRemovedCards(before, after);
-                var obtainedCards = DeckUtil.FindAddedCards(before, after);
+                var removedCards = DeckUtil.FindRemovedCards(before, after);
+                var removedText = DeckUtil.JoinCardList(removedCards);
 
-                var lostText = DeckUtil.JoinCardList(lostCards);
-                var obtainedText = DeckUtil.JoinCardList(obtainedCards);
+                RelicTracker.SetText(relic, "Cards Removed", string.IsNullOrWhiteSpace(removedText) ? "Unknown" : removedText);
 
-                RelicTracker.SetText(relic, "Cards Lost", string.IsNullOrWhiteSpace(lostText) ? "Unknown" : lostText);
-                RelicTracker.SetText(relic, "Cards Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
-
-                ModLog.Info($"AstrolabePatch: inferred {lostCards.Count} lost and {obtainedCards.Count} obtained cards");
+                ModLog.Info($"BiiigHugPatch: inferred {removedCards.Count} removed cards");
             } catch { }
         }
     }
