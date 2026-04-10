@@ -344,7 +344,7 @@ public static class RelicTracker {
                     var hasFlash = def.DefaultCounters?.Any(c => string.Equals(c, "Flashes", StringComparison.OrdinalIgnoreCase)) == true;
                     if (!hasFlash) return;
                 }
-                AddAmount(__instance, "Flashes", 1);
+                AddAmountByType(tk, "Flashes", 1);
             } catch { }
         }
 
