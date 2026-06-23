@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using StatTheRelics.RelicStats;
 
 namespace StatTheRelics.RelicStats.Generated {
