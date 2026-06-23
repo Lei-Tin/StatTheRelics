@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Reflection;
 using MegaCrit.Sts2.Core.Models;
 
@@ -32,6 +33,83 @@ namespace StatTheRelics {
                 return Convert.ToInt32(raw);
             } catch {
                 return fallback;
+            }
+        }
+
+        public static object? GetDynamicVar(object? relic, string key) {
+            try {
+                if (relic == null || string.IsNullOrWhiteSpace(key)) return null;
+
+                var dynamicVars = GetMemberValue(relic, "DynamicVars");
+                if (dynamicVars == null) return null;
+
+                var direct = GetMemberValue(dynamicVars, key);
+                if (direct != null) return direct;
+
+                if (dynamicVars is IDictionary dict && dict.Contains(key)) return dict[key];
+
+                var type = dynamicVars.GetType();
+                var indexer = type.GetProperty("Item", Flags, null, null, new[] { typeof(string) }, null);
+                if (indexer != null) return indexer.GetValue(dynamicVars, new object[] { key });
+
+                var getItem = type.GetMethod("get_Item", Flags, null, new[] { typeof(string) }, null);
+                if (getItem != null) return getItem.Invoke(dynamicVars, new object[] { key });
+            } catch { }
+
+            return null;
+        }
+
+        public static int GetDynamicVarIntValue(object? relic, string key, int fallback = 0) {
+            try {
+                var dynamicVar = GetDynamicVar(relic, key);
+                if (dynamicVar == null) return fallback;
+
+                var raw = GetMemberValue(dynamicVar, "BaseValue")
+                    ?? GetMemberValue(dynamicVar, "IntValue")
+                    ?? GetMemberValue(dynamicVar, "Value");
+
+                if (raw == null) return fallback;
+                return Convert.ToInt32(raw);
+            } catch {
+                return fallback;
+            }
+        }
+
+        public static T? FindRelic<T>(object? ownerOrCreature) where T : class {
+            try {
+                var relics = GetMemberValue(ownerOrCreature, "Relics");
+                if (relics == null) {
+                    var owner = GetMemberValue(ownerOrCreature, "Owner")
+                        ?? GetMemberValue(ownerOrCreature, "Player");
+                    relics = GetMemberValue(owner, "Relics");
+                }
+
+                if (relics is not IEnumerable enumerable) return null;
+                foreach (var relic in enumerable) {
+                    if (relic is T typed) return typed;
+                }
+            } catch { }
+
+            return null;
+        }
+
+        public static string? GetModelTitle(object? model) {
+            try {
+                if (model == null) return null;
+
+                var title = GetMemberValue(model, "Title");
+                if (title is string s && !string.IsNullOrWhiteSpace(s)) return s;
+
+                var loc = GetLocStringText(title);
+                if (!string.IsNullOrWhiteSpace(loc)) return loc;
+
+                var titleLocString = GetMemberValue(model, "TitleLocString");
+                loc = GetLocStringText(titleLocString);
+                if (!string.IsNullOrWhiteSpace(loc)) return loc;
+
+                return model.GetType().Name;
+            } catch {
+                return null;
             }
         }
 

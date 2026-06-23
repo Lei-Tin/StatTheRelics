@@ -1,25 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(BlessedAntler), nameof(BlessedAntler.BeforeHandDraw))]
-    public static class BlessedAntlerPatch {
-        [ThreadStatic] internal static BlessedAntler? Current;
+    [HarmonyPatch(typeof(BigHat), nameof(BigHat.AfterSideTurnStart))]
+    public static class BigHatPatch {
+        [ThreadStatic] internal static BigHat? Current;
 
-        static void Prefix(BlessedAntler __instance, Player player, PlayerChoiceContext choiceContext, CombatState combatState) {
+        static void Prefix(BigHat __instance, CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState) {
             try {
-                if (__instance == null || player == null || combatState == null) return;
-                if (__instance.Owner != player) return;
-                if (combatState.RoundNumber != 1) return;
+                if (__instance == null || participants == null) return;
+                var owner = __instance.Owner;
+                var ownerCreature = owner?.Creature;
+                if (ownerCreature == null) return;
+                if (!participants.Contains(ownerCreature)) return;
+                var playerCombatState = owner?.PlayerCombatState;
+                if (playerCombatState == null || playerCombatState.TurnNumber > 1) return;
                 Current = __instance;
             } catch { }
         }
@@ -35,19 +40,17 @@ namespace StatTheRelics.Patches.Relics {
         typeof(Player),
         typeof(CardPilePosition)
     })]
-    public static class BlessedAntlerGeneratedCardsPatch {
+    public static class BigHatGeneratedCardsPatch {
         static void Postfix(Task<IReadOnlyList<CardPileAddResult>> __result) {
             try {
-                var relic = BlessedAntlerPatch.Current;
+                var relic = BigHatPatch.Current;
                 if (relic == null) return;
 
                 __result.ContinueWith(task => {
                     try {
                         if (task.Status != TaskStatus.RanToCompletion) return;
                         var count = CountSuccessful(task.Result);
-                        if (count <= 0) return;
-
-                        RelicTracker.AddAmount(relic, "Dazed Given", count);
+                        if (count > 0) RelicTracker.AddAmount(relic, "Ethereal Cards Given", count);
                     } catch { }
                 });
             } catch { }
@@ -65,21 +68,6 @@ namespace StatTheRelics.Patches.Relics {
             } catch {
                 return 0;
             }
-        }
-    }
-
-    [HarmonyPatch(typeof(AbstractModel), nameof(AbstractModel.AfterPlayerTurnStart), new[] { typeof(PlayerChoiceContext), typeof(Player) })]
-    public static class BlessedAntlerEnergyPatch {
-        static void Postfix(AbstractModel __instance, PlayerChoiceContext choiceContext, Player player) {
-            try {
-                if (__instance is not BlessedAntler blessedAntler || player == null) return;
-                if (blessedAntler.Owner != player) return;
-
-                var energy = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(blessedAntler, "Energy"));
-                if (energy <= 0) return;
-
-                RelicTracker.AddAmount(blessedAntler, "Energy Given", energy);
-            } catch { }
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Managers;
@@ -19,25 +20,25 @@ namespace StatTheRelics.Patches {
         }
 
         static void PatchSaveRun(Harmony harmony) {
-            var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "SaveRun")
-                         ?? throw new MissingMethodException("RunSaveManager.SaveRun not found");
+            var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "SaveRun", new[] { typeof(AbstractRoom) })
+                         ?? throw new MissingMethodException("RunSaveManager.SaveRun(AbstractRoom) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterSaveRun)));
             ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterSaveRun");
         }
 
         static void PatchLoadRun(Harmony harmony) {
-            var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "LoadRunSave")
-                         ?? throw new MissingMethodException("RunSaveManager.LoadRunSave not found");
+            var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "LoadRunSave", Type.EmptyTypes)
+                         ?? throw new MissingMethodException("RunSaveManager.LoadRunSave() not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadRunSave)));
             ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterLoadRunSave");
         }
 
         static void PatchInitializeSavedRun(Harmony harmony) {
-            var initSavedRun = AccessTools.DeclaredMethod(typeof(RunManager), "InitializeSavedRun");
-            var setupSavedSinglePlayer = AccessTools.DeclaredMethod(typeof(RunManager), "SetUpSavedSinglePlayer");
+            var initSavedRun = AccessTools.DeclaredMethod(typeof(RunManager), "InitializeSavedRun", new[] { typeof(SerializableRun) });
+            var setupSavedSinglePlayer = AccessTools.DeclaredMethod(typeof(RunManager), "SetUpSavedSinglePlayer", new[] { typeof(RunState), typeof(SerializableRun) });
             var target = initSavedRun ?? setupSavedSinglePlayer;
             if (target == null) {
-                throw new MissingMethodException("RunManager.InitializeSavedRun or RunManager.SetUpSavedSinglePlayer not found");
+                throw new MissingMethodException("RunManager.InitializeSavedRun(SerializableRun) or RunManager.SetUpSavedSinglePlayer(RunState, SerializableRun) not found");
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterInitializeSavedRun)));
@@ -45,15 +46,15 @@ namespace StatTheRelics.Patches {
         }
 
         static void PatchSaveHistory(Harmony harmony) {
-            var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "SaveHistoryInternal")
-                         ?? throw new MissingMethodException("RunHistorySaveManager.SaveHistoryInternal not found");
+            var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "SaveHistoryInternal", new[] { typeof(string), typeof(string) })
+                         ?? throw new MissingMethodException("RunHistorySaveManager.SaveHistoryInternal(string, string) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterSaveHistoryInternal)));
             ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterSaveHistoryInternal");
         }
 
         static void PatchLoadHistory(Harmony harmony) {
-            var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "LoadHistory")
-                         ?? throw new MissingMethodException("RunHistorySaveManager.LoadHistory not found");
+            var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "LoadHistory", new[] { typeof(string) })
+                         ?? throw new MissingMethodException("RunHistorySaveManager.LoadHistory(string) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadHistory)));
             ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterLoadHistory");
         }

@@ -1,13 +1,17 @@
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Count one free-card opportunity when the per-turn play counter reaches threshold - 1.
+    // Count the extra card only when it is actually played while the scarf is active.
     [HarmonyPatch(typeof(BrilliantScarf), nameof(BrilliantScarf.AfterCardPlayed))]
     public static class BrilliantScarfPatch {
-        static void Postfix(BrilliantScarf __instance) {
+        static void Prefix(BrilliantScarf __instance, CardPlay cardPlay, ref bool __state) {
             try {
-                if (__instance == null) return;
+                __state = false;
+                if (__instance == null || cardPlay == null) return;
+                if (cardPlay.IsAutoPlay) return;
+                if (cardPlay.Card == null || cardPlay.Card.Owner != __instance.Owner) return;
 
                 var cardsPlayedThisTurn = ReflectionUtil.GetIntMemberValue(__instance, "CardsPlayedThisTurn", -1);
                 var dynamicVars = ReflectionUtil.GetMemberValue(__instance, "DynamicVars");
@@ -18,8 +22,15 @@ namespace StatTheRelics.Patches.Relics {
                 if (threshold <= 0) return;
                 if (cardsPlayedThisTurn != threshold - 1) return;
 
+                __state = true;
+            } catch { }
+        }
+
+        static void Postfix(BrilliantScarf __instance, bool __state) {
+            try {
+                if (__instance == null || !__state) return;
                 RelicTracker.AddAmount(__instance, "Freed Cards", 1);
-                ModLog.Info($"BrilliantScarfPatch: incremented Freed Cards at CardsPlayedThisTurn={cardsPlayedThisTurn}, threshold={threshold}");
+                ModLog.Info("BrilliantScarfPatch: counted actual free card play");
             } catch { }
         }
     }

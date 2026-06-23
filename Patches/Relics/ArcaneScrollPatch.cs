@@ -42,7 +42,7 @@ namespace StatTheRelics.Patches.Relics {
 
                 var obtainedText = DeckUtil.JoinCardList(obtainedCards);
 
-                RelicTracker.SetText(relic, "Cards Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
+                RelicTracker.SetText(relic, "Card Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
 
                 ModLog.Info($"ArcaneScrollPatch: inferred {obtainedCards.Count} obtained cards");
             } catch { }

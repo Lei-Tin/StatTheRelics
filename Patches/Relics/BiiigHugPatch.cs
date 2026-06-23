@@ -3,6 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 using StatTheRelics;
 
@@ -44,6 +49,46 @@ namespace StatTheRelics.Patches.Relics {
                 RelicTracker.SetText(relic, "Cards Removed", string.IsNullOrWhiteSpace(removedText) ? "Unknown" : removedText);
 
                 ModLog.Info($"BiiigHugPatch: inferred {removedCards.Count} removed cards");
+            } catch { }
+        }
+    }
+
+    [HarmonyPatch(typeof(BiiigHug), nameof(BiiigHug.AfterShuffle))]
+    public static class BiiigHugAfterShufflePatch {
+        [ThreadStatic] internal static BiiigHug? Current;
+
+        static void Prefix(BiiigHug __instance, PlayerChoiceContext choiceContext, Player shuffler) {
+            try {
+                if (__instance == null || shuffler == null) return;
+                if (__instance.Owner != shuffler) return;
+                Current = __instance;
+            } catch { }
+        }
+
+        static void Postfix() {
+            Current = null;
+        }
+    }
+
+    [HarmonyPatch(typeof(CardPileCmd), nameof(CardPileCmd.AddGeneratedCardToCombat), new Type[] {
+        typeof(CardModel),
+        typeof(PileType),
+        typeof(Player),
+        typeof(CardPilePosition)
+    })]
+    public static class BiiigHugGeneratedCardPatch {
+        static void Postfix(Task<CardPileAddResult> __result) {
+            try {
+                var relic = BiiigHugAfterShufflePatch.Current;
+                if (relic == null) return;
+
+                __result.ContinueWith(task => {
+                    try {
+                        if (task.Status != TaskStatus.RanToCompletion) return;
+                        var success = ReflectionUtil.GetMemberValue(task.Result, "success");
+                        if (success is bool ok && ok) RelicTracker.AddAmount(relic, "Soots Added", 1);
+                    } catch { }
+                });
             } catch { }
         }
     }

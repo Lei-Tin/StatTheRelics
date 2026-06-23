@@ -14,8 +14,8 @@ namespace StatTheRelics.Patches.Relics {
                 var starterName = starterCard == null ? null : DeckUtil.GetCardDisplayName(starterCard);
                 var transformedName = __result == null ? null : DeckUtil.GetCardDisplayName(__result);
 
-                RelicTracker.SetText(__instance, "Cards Lost", string.IsNullOrWhiteSpace(starterName) ? "Unknown" : starterName);
-                RelicTracker.SetText(__instance, "Cards Obtained", string.IsNullOrWhiteSpace(transformedName) ? "Unknown" : transformedName);
+                RelicTracker.SetText(__instance, "Card Lost", string.IsNullOrWhiteSpace(starterName) ? "Unknown" : starterName);
+                RelicTracker.SetText(__instance, "Card Obtained", string.IsNullOrWhiteSpace(transformedName) ? "Unknown" : transformedName);
 
                 ModLog.Info($"ArchaicToothPatch: transformed '{starterName ?? "Unknown"}' -> '{transformedName ?? "Unknown"}'");
             } catch { }
