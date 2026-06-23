@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.CardSelection;
@@ -16,6 +17,10 @@ namespace StatTheRelics.Patches.Relics {
     public static class ElectricShrympPatch {
         internal const string TypeName = "MegaCrit.Sts2.Core.Models.Relics.ElectricShrymp";
         static ElectricShrymp? Current;
+        static readonly object CountLock = new();
+        static readonly ConditionalWeakTable<ElectricShrymp, CountMarker> AutoPlayCountedRelics = new();
+
+        sealed class CountMarker { }
 
         static void Prefix(ElectricShrymp __instance) {
             Current = __instance;
@@ -35,6 +40,28 @@ namespace StatTheRelics.Patches.Relics {
         }
 
         internal static ElectricShrymp? Active => Current;
+
+        internal static bool HasAutoPlayCounted(ElectricShrymp relic) {
+            try {
+                lock (CountLock) {
+                    return AutoPlayCountedRelics.TryGetValue(relic, out _);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        internal static bool MarkAutoPlayCounted(ElectricShrymp relic) {
+            try {
+                lock (CountLock) {
+                    if (AutoPlayCountedRelics.TryGetValue(relic, out _)) return false;
+                    AutoPlayCountedRelics.Add(relic, new CountMarker());
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
     }
 
     [HarmonyPatch(typeof(CardSelectCmd), nameof(CardSelectCmd.FromDeckForEnchantment), new Type[] {
@@ -73,7 +100,7 @@ namespace StatTheRelics.Patches.Relics {
                 if (!RelicTracker.HasTrackedRelicType(ElectricShrympPatch.TypeName)) return;
                 var relic = ReflectionUtil.FindRelic<ElectricShrymp>(player);
                 if (relic == null) return;
-                if (string.Equals(RelicTracker.GetText(relic, "Auto Play Counted"), "1", StringComparison.Ordinal)) return;
+                if (ElectricShrympPatch.HasAutoPlayCounted(relic)) return;
 
                 var card = ReflectionUtil.GetMemberValue(__instance, "Card") as CardModel;
                 if (card == null || card.Owner != player) return;
@@ -106,9 +133,8 @@ namespace StatTheRelics.Patches.Relics {
 
         static void CountOnce(ElectricShrymp relic) {
             try {
-                if (string.Equals(RelicTracker.GetText(relic, "Auto Play Counted"), "1", StringComparison.Ordinal)) return;
+                if (!ElectricShrympPatch.MarkAutoPlayCounted(relic)) return;
                 RelicTracker.AddAmount(relic, "Auto Played Card", 1);
-                RelicTracker.SetText(relic, "Auto Play Counted", "1");
             } catch { }
         }
     }

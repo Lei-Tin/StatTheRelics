@@ -16,7 +16,6 @@ namespace StatTheRelics.Patches.Relics {
 
         class CardState {
             public object Card { get; set; } = null!;
-            public string Name { get; set; } = string.Empty;
             public bool WasUpgraded { get; set; }
         }
 
@@ -50,11 +49,9 @@ namespace StatTheRelics.Patches.Relics {
                 if (!state.ShouldTrigger) return;
 
                 var upgraded = FindNewlyUpgradedCards(state.Cards);
-                if (upgraded.Count <= 0) return;
+                if (upgraded <= 0) return;
 
-                RelicTracker.AddAmount(__instance, "Times Triggered", 1);
-                RelicTracker.AddAmount(__instance, "Cards Upgraded", upgraded.Count);
-                RelicTracker.SetText(__instance, "Cards Upgraded", DeckUtil.JoinCardList(upgraded));
+                RelicTracker.AddAmount(__instance, "Cards Upgraded", upgraded);
             } catch { }
         }
 
@@ -62,18 +59,15 @@ namespace StatTheRelics.Patches.Relics {
             foreach (var card in DeckUtil.EnumerateDeckCards(relic.Owner)) {
                 yield return new CardState {
                     Card = card,
-                    Name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true),
                     WasUpgraded = IsUpgraded(card)
                 };
             }
         }
 
-        static List<string> FindNewlyUpgradedCards(IEnumerable<CardState> before) {
+        static int FindNewlyUpgradedCards(IEnumerable<CardState> before) {
             return before
                 .Where(c => !c.WasUpgraded && IsUpgraded(c.Card))
-                .Select(c => c.Name)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .ToList();
+                .Count();
         }
 
         static bool IsUpgraded(object card) {

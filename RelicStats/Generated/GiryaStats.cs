@@ -4,6 +4,6 @@ using StatTheRelics.RelicStats;
 namespace StatTheRelics.RelicStats.Generated {
     internal sealed class GiryaStats : BaseRelicStats {
         public override string TypeName => "MegaCrit.Sts2.Core.Models.Relics.Girya";
-        public override IReadOnlyList<string> DefaultCounters => DefaultFlashes;
+        public override IReadOnlyList<string> DefaultCounters => new [] { "Strength Gained" };
     }
 }

@@ -35,8 +35,24 @@ namespace StatTheRelics {
             var title = preferBaseTitle
                 ? ReflectionUtil.GetCardBaseTitle(card) ?? ReflectionUtil.GetCardTitle(card)
                 : ReflectionUtil.GetCardTitle(card) ?? ReflectionUtil.GetCardBaseTitle(card);
-            if (!string.IsNullOrWhiteSpace(title)) return title;
+            if (!string.IsNullOrWhiteSpace(title)) return AddUpgradeSuffix(card, title);
             return card.GetType().Name;
+        }
+
+        static string AddUpgradeSuffix(object card, string title) {
+            try {
+                var name = (title ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(name)) return name;
+                if (name.EndsWith("+", StringComparison.Ordinal)) return name;
+
+                var isUpgraded = ReflectionUtil.GetMemberValue(card, "IsUpgraded");
+                if (isUpgraded is not bool upgraded || !upgraded) return name;
+
+                var upgradeLevel = Math.Max(1, ReflectionUtil.GetIntMemberValue(card, "CurrentUpgradeLevel", 1));
+                return name + new string('+', upgradeLevel);
+            } catch {
+                return title;
+            }
         }
 
         public static List<string> FindAddedCards(IReadOnlyDictionary<string, int> before, IReadOnlyDictionary<string, int> after) {

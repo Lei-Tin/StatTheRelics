@@ -9,7 +9,6 @@ public class HoverTipPatch {
     static void Postfix(HoverTip __instance, ref string __result) {
         try {
             var model = __instance.CanonicalModel;
-            ModLog.Info($"HoverTipPatch: invoked for model type={model?.GetType().FullName ?? "null"}");
             if (model == null) return;
 
             var extra = RelicTracker.FormatTooltipAppend(model);
@@ -22,7 +21,8 @@ public class HoverTipPatch {
             if (alreadyHasHeader || alreadyHasBody) return;
 
             __result = current + "\n\n" + extra;
-            ModLog.Info($"HoverTipPatch: appended stats for model {model.GetType().FullName}");
-        } catch { }
+        } catch (Exception ex) {
+            ModLog.Exception("HoverTipPatch", ex);
+        }
     }
 }

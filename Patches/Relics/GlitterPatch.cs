@@ -10,11 +10,11 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    public static class FresnelLensPatch {
+    public static class GlitterPatch {
         sealed class Mark {
-            public FresnelLens Relic { get; }
+            public Glitter Relic { get; }
 
-            public Mark(FresnelLens relic) {
+            public Mark(Glitter relic) {
                 Relic = relic;
             }
         }
@@ -26,18 +26,9 @@ namespace StatTheRelics.Patches.Relics {
         internal static void MarkFromCreationResult(CardCreationResult result) {
             try {
                 if (result == null) return;
-                var relic = result.ModifyingRelics?.OfType<FresnelLens>().FirstOrDefault();
+                var relic = result.ModifyingRelics?.OfType<Glitter>().FirstOrDefault();
                 if (relic == null) return;
                 MarkCard(result.Card, relic);
-            } catch { }
-        }
-
-        internal static void MarkCard(CardModel card, FresnelLens relic) {
-            try {
-                if (card == null || relic == null) return;
-                lock (MarkLock) {
-                    if (!MarkedCards.TryGetValue(card, out _)) MarkedCards.Add(card, new Mark(relic));
-                }
             } catch { }
         }
 
@@ -65,6 +56,15 @@ namespace StatTheRelics.Patches.Relics {
                         }
                     } catch { }
                 });
+            } catch { }
+        }
+
+        static void MarkCard(CardModel card, Glitter relic) {
+            try {
+                if (card == null || relic == null) return;
+                lock (MarkLock) {
+                    if (!MarkedCards.TryGetValue(card, out _)) MarkedCards.Add(card, new Mark(relic));
+                }
             } catch { }
         }
 
@@ -100,18 +100,9 @@ namespace StatTheRelics.Patches.Relics {
         typeof(CardModel),
         typeof(RelicModel)
     })]
-    public static class FresnelLensCardCreationResultPatch {
+    public static class GlitterCardCreationResultPatch {
         static void Postfix(CardCreationResult __instance) {
-            FresnelLensPatch.MarkFromCreationResult(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(FresnelLens), nameof(FresnelLens.TryModifyCardBeingAddedToDeck))]
-    public static class FresnelLensCardBeingAddedPatch {
-        static void Postfix(FresnelLens __instance, bool __result, CardModel newCard) {
-            try {
-                if (__result && newCard != null) FresnelLensPatch.MarkCard(newCard, __instance);
-            } catch { }
+            GlitterPatch.MarkFromCreationResult(__instance);
         }
     }
 
@@ -122,9 +113,9 @@ namespace StatTheRelics.Patches.Relics {
         typeof(AbstractModel),
         typeof(bool)
     })]
-    public static class FresnelLensCardPileAddByTypePatch {
+    public static class GlitterCardPileAddByTypePatch {
         static void Postfix(CardModel card, Task<CardPileAddResult> __result) {
-            FresnelLensPatch.CountWhenAdded(__result, card);
+            GlitterPatch.CountWhenAdded(__result, card);
         }
     }
 
@@ -135,9 +126,9 @@ namespace StatTheRelics.Patches.Relics {
         typeof(AbstractModel),
         typeof(bool)
     })]
-    public static class FresnelLensCardPileAddByPilePatch {
+    public static class GlitterCardPileAddByPilePatch {
         static void Postfix(CardModel card, Task<CardPileAddResult> __result) {
-            FresnelLensPatch.CountWhenAdded(__result, card);
+            GlitterPatch.CountWhenAdded(__result, card);
         }
     }
 
@@ -148,9 +139,9 @@ namespace StatTheRelics.Patches.Relics {
         typeof(AbstractModel),
         typeof(bool)
     })]
-    public static class FresnelLensCardPileAddManyByTypePatch {
+    public static class GlitterCardPileAddManyByTypePatch {
         static void Postfix(IEnumerable<CardModel> cards, Task<IReadOnlyList<CardPileAddResult>> __result) {
-            FresnelLensPatch.CountWhenAdded(__result, cards);
+            GlitterPatch.CountWhenAdded(__result, cards);
         }
     }
 
@@ -161,9 +152,9 @@ namespace StatTheRelics.Patches.Relics {
         typeof(AbstractModel),
         typeof(bool)
     })]
-    public static class FresnelLensCardPileAddManyByPilePatch {
+    public static class GlitterCardPileAddManyByPilePatch {
         static void Postfix(IEnumerable<CardModel> cards, Task<IReadOnlyList<CardPileAddResult>> __result) {
-            FresnelLensPatch.CountWhenAdded(__result, cards);
+            GlitterPatch.CountWhenAdded(__result, cards);
         }
     }
 }
