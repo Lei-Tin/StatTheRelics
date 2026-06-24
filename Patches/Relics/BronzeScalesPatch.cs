@@ -31,10 +31,10 @@ namespace StatTheRelics.Patches.Relics {
                 if (target == null || dealer == null) return;
                 if (cardSource != null) return;
                 if (amount <= 0) return;
-                if (!IsThornsPowerCall()) return;
 
                 var relic = ReflectionUtil.FindRelic<BronzeScales>(dealer);
                 if (relic == null) return;
+                if (!IsThornsPowerCall()) return;
 
                 var bronzeThorns = ReflectionUtil.GetDynamicVarIntValue(relic, "ThornsPower", 3);
                 if (bronzeThorns <= 0) bronzeThorns = 3;

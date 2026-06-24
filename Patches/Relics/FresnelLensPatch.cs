@@ -22,6 +22,7 @@ namespace StatTheRelics.Patches.Relics {
         static readonly object MarkLock = new();
         static readonly ConditionalWeakTable<CardModel, Mark> MarkedCards = new();
         static readonly ConditionalWeakTable<CardModel, Mark> CountedCards = new();
+        static int pendingMarks;
 
         internal static void MarkFromCreationResult(CardCreationResult result) {
             try {
@@ -36,7 +37,9 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (card == null || relic == null) return;
                 lock (MarkLock) {
-                    if (!MarkedCards.TryGetValue(card, out _)) MarkedCards.Add(card, new Mark(relic));
+                    if (MarkedCards.TryGetValue(card, out _)) return;
+                    MarkedCards.Add(card, new Mark(relic));
+                    pendingMarks++;
                 }
             } catch { }
         }
@@ -44,6 +47,10 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountWhenAdded(Task<CardPileAddResult> task, CardModel fallbackCard) {
             try {
                 if (task == null) return;
+                lock (MarkLock) {
+                    if (pendingMarks <= 0) return;
+                }
+
                 task.ContinueWith(t => {
                     try {
                         if (t.Status == TaskStatus.RanToCompletion) CountWhenAdded(t.Result, fallbackCard);
@@ -55,6 +62,10 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountWhenAdded(Task<IReadOnlyList<CardPileAddResult>> task, IEnumerable<CardModel> fallbackCards) {
             try {
                 if (task == null) return;
+                lock (MarkLock) {
+                    if (pendingMarks <= 0) return;
+                }
+
                 var fallbackList = fallbackCards?.ToList() ?? new List<CardModel>();
                 task.ContinueWith(t => {
                     try {
@@ -78,6 +89,7 @@ namespace StatTheRelics.Patches.Relics {
                 lock (MarkLock) {
                     if (!MarkedCards.TryGetValue(card, out mark)) return;
                     MarkedCards.Remove(card);
+                    if (pendingMarks > 0) pendingMarks--;
                     if (CountedCards.TryGetValue(card, out _)) return;
                     CountedCards.Add(card, mark);
                 }

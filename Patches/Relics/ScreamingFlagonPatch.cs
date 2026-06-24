@@ -96,10 +96,12 @@ namespace StatTheRelics.Patches.Relics {
 
         static ScreamingFlagon? FindFromStack(Creature dealer) {
             try {
-                if (dealer == null || !IsScreamingFlagonStack()) return null;
-                return ReflectionUtil.FindRelic<ScreamingFlagon>(dealer)
+                if (dealer == null) return null;
+                var relic = ReflectionUtil.FindRelic<ScreamingFlagon>(dealer)
                     ?? ReflectionUtil.FindRelic<ScreamingFlagon>(ReflectionUtil.GetMemberValue(dealer, "Owner"))
                     ?? ReflectionUtil.FindRelic<ScreamingFlagon>(ReflectionUtil.GetMemberValue(dealer, "Player"));
+                if (relic == null || !IsScreamingFlagonStack()) return null;
+                return relic;
             } catch {
                 return null;
             }
