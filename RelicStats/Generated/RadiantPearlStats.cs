@@ -4,6 +4,6 @@ using StatTheRelics.RelicStats;
 namespace StatTheRelics.RelicStats.Generated {
     internal sealed class RadiantPearlStats : BaseRelicStats {
         public override string TypeName => "MegaCrit.Sts2.Core.Models.Relics.RadiantPearl";
-        public override IReadOnlyList<string> DefaultCounters => new [] { "Luminscence Played" };
+        public override IReadOnlyList<string> DefaultCounters => new [] { "Luminesce Played" };
     }
 }

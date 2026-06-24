@@ -5,16 +5,16 @@ using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
     [HarmonyPatch(typeof(CardModel), nameof(CardModel.OnPlayWrapper))]
-    public static class StorybookPatch {
+    public static class TanxsWhistlePatch {
         static void Postfix(CardModel __instance) {
             try {
                 if (__instance == null) return;
-                if (__instance is not BrightestFlame) return;
+                if (__instance is not Whistle) return;
 
-                var relic = ReflectionUtil.FindRelic<Storybook>(__instance.Owner);
+                var relic = ReflectionUtil.FindRelic<TanxsWhistle>(__instance.Owner);
                 if (relic == null) return;
 
-                RelicTracker.AddAmount(relic, "Brightest Flame Played", 1);
+                RelicTracker.AddAmount(relic, "Whistle Played", 1);
             } catch { }
         }
     }

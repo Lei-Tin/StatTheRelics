@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -13,58 +10,42 @@ using MegaCrit.Sts2.Core.Models.Relics;
 namespace StatTheRelics.Patches.Relics {
     [HarmonyPatch(typeof(BlessedAntler), nameof(BlessedAntler.BeforeHandDraw))]
     public static class BlessedAntlerPatch {
-        [ThreadStatic] internal static BlessedAntler? Current;
+        class State {
+            public int DazedGiven { get; set; }
+        }
 
-        static void Prefix(BlessedAntler __instance, Player player, PlayerChoiceContext choiceContext, CombatState combatState) {
+        static void Prefix(BlessedAntler __instance, Player player, PlayerChoiceContext choiceContext, ICombatState combatState, ref object __state) {
             try {
+                _ = choiceContext;
+                _ = combatState;
                 if (__instance == null || player == null || combatState == null) return;
                 if (__instance.Owner != player) return;
-                if (combatState.RoundNumber != 1) return;
-                Current = __instance;
+                var owner = __instance.Owner;
+                var playerCombatState = owner?.PlayerCombatState;
+                if (playerCombatState == null || playerCombatState.TurnNumber != 1) return;
+
+                __state = new State {
+                    DazedGiven = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "Cards", 3))
+                };
             } catch { }
         }
 
-        static void Postfix() {
-            Current = null;
-        }
-    }
-
-    [HarmonyPatch(typeof(CardPileCmd), nameof(CardPileCmd.AddGeneratedCardsToCombat), new Type[] {
-        typeof(IEnumerable<CardModel>),
-        typeof(PileType),
-        typeof(Player),
-        typeof(CardPilePosition)
-    })]
-    public static class BlessedAntlerGeneratedCardsPatch {
-        static void Postfix(Task<IReadOnlyList<CardPileAddResult>> __result) {
+        static void Postfix(BlessedAntler __instance, Task __result, object __state) {
             try {
-                var relic = BlessedAntlerPatch.Current;
-                if (relic == null) return;
+                if (__state is not State state || state.DazedGiven <= 0) return;
+
+                if (__result == null) {
+                    RelicTracker.AddAmount(__instance, "Dazed Given", state.DazedGiven);
+                    return;
+                }
 
                 __result.ContinueWith(task => {
                     try {
                         if (task.Status != TaskStatus.RanToCompletion) return;
-                        var count = CountSuccessful(task.Result);
-                        if (count <= 0) return;
-
-                        RelicTracker.AddAmount(relic, "Dazed Given", count);
+                        RelicTracker.AddAmount(__instance, "Dazed Given", state.DazedGiven);
                     } catch { }
                 });
             } catch { }
-        }
-
-        static int CountSuccessful(IEnumerable<CardPileAddResult>? results) {
-            try {
-                if (results == null) return 0;
-                var count = 0;
-                foreach (var result in results) {
-                    var success = ReflectionUtil.GetMemberValue(result, "success");
-                    if (success is bool ok && ok) count++;
-                }
-                return count;
-            } catch {
-                return 0;
-            }
         }
     }
 

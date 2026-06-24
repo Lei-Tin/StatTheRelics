@@ -1,71 +1,52 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
     [HarmonyPatch(typeof(Crossbow), nameof(Crossbow.AfterSideTurnStart))]
     public static class CrossbowPatch {
-        [ThreadStatic] internal static Crossbow? Current;
+        class State {
+            public int CardsGenerated { get; set; }
+        }
 
-        static void Prefix(Crossbow __instance, CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState) {
+        static void Prefix(Crossbow __instance, CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState, ref object __state) {
             try {
+                _ = side;
+                _ = combatState;
                 if (__instance == null || participants == null) return;
-                var ownerCreature = __instance.Owner?.Creature;
-                if (ownerCreature == null || !participants.Contains(ownerCreature)) return;
-                Current = __instance;
+                var owner = __instance.Owner;
+                var ownerCreature = owner?.Creature;
+                if (owner == null || ownerCreature == null || !participants.Contains(ownerCreature)) return;
+
+                var hasAttackCards = owner.Character.CardPool
+                    .GetUnlockedCards(owner.UnlockState, owner.RunState.CardMultiplayerConstraint)
+                    .Any(card => card.Type == CardType.Attack);
+                if (!hasAttackCards) return;
+
+                __state = new State { CardsGenerated = 1 };
             } catch { }
         }
 
-        static void Postfix() {
-            Current = null;
-        }
-    }
-
-    [HarmonyPatch(typeof(CardPileCmd), nameof(CardPileCmd.AddGeneratedCardsToCombat), new Type[] {
-        typeof(IEnumerable<CardModel>),
-        typeof(PileType),
-        typeof(Player),
-        typeof(CardPilePosition)
-    })]
-    public static class CrossbowGeneratedCardsPatch {
-        static void Prefix(Player creator, ref object __state) {
+        static void Postfix(Crossbow __instance, Task __result, object __state) {
             try {
-                var relic = CrossbowPatch.Current;
-                if (relic == null || creator != relic.Owner) return;
-                __state = relic;
-            } catch { }
-        }
+                if (__state is not State state || state.CardsGenerated <= 0) return;
 
-        static void Postfix(Task<IReadOnlyList<CardPileAddResult>> __result, object __state) {
-            try {
-                if (__state is not Crossbow relic || __result == null) return;
+                if (__result == null) {
+                    RelicTracker.AddAmount(__instance, "Cards Generated", state.CardsGenerated);
+                    return;
+                }
 
                 __result.ContinueWith(task => {
                     try {
-                        if (task.Status != TaskStatus.RanToCompletion || task.Result == null) return;
-                        var count = CountSuccessful(task.Result);
-                        if (count > 0) RelicTracker.AddAmount(relic, "Cards Generated", count);
+                        if (task.Status == TaskStatus.RanToCompletion) RelicTracker.AddAmount(__instance, "Cards Generated", state.CardsGenerated);
                     } catch { }
                 });
             } catch { }
-        }
-
-        static int CountSuccessful(IEnumerable<CardPileAddResult> results) {
-            var count = 0;
-            foreach (var result in results) {
-                var success = ReflectionUtil.GetMemberValue(result, "success");
-                if (success is bool ok && ok) count++;
-            }
-            return count;
         }
     }
 }
