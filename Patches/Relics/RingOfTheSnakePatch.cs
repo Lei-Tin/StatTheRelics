@@ -2,7 +2,6 @@ using System;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Entities.Players;
-using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
     // Capture the modified hand draw
@@ -14,8 +13,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (extraDraw > 0) {
                     RelicTracker.AddAmount(__instance, "Cards Drawn", Convert.ToInt32(extraDraw));
                 }
-
-                ModLog.Info($"RingOfTheSnakePatch: player={player?.GetType().FullName ?? "null"}, baseCount={count}, result={__result}, extra={extraDraw}");
             } catch { }
         }
     }
