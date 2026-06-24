@@ -110,6 +110,31 @@ public static class RelicTracker {
         } catch { }
     }
 
+    public static void SetTextByType(string relicTypeName, string key, string value) {
+        try {
+            MaybeRestoreLiveAfterHistory();
+            if (string.IsNullOrWhiteSpace(relicTypeName)) return;
+            if (string.IsNullOrWhiteSpace(key)) return;
+            if (string.IsNullOrWhiteSpace(value)) return;
+            if (relicTypeName.IndexOf(relicNamespaceToken, StringComparison.OrdinalIgnoreCase) < 0) return;
+
+            var d = dataByType.GetOrAdd(relicTypeName, _ => {
+                var rd = new RelicData();
+                var defaults = RelicStatsRegistry.GetDefaultCounters(relicTypeName);
+                if (defaults != null) {
+                    foreach (var defaultKey in defaults) {
+                        if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
+                    }
+                }
+                ModLog.Info($"RelicTracker: initialized counters for {relicTypeName}");
+                return rd;
+            });
+
+            d.TextStats[key] = value;
+            ModLog.Info($"RelicTracker: {relicTypeName} - {key} := {value}");
+        } catch { }
+    }
+
     public static string? GetText(object relic, string key) {
         try {
             if (relic == null) return null;
