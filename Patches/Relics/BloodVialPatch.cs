@@ -17,7 +17,6 @@ namespace StatTheRelics.Patches.Relics {
                 var creature = __instance?.Owner?.Creature;
                 var beforeHp = GetHp(creature);
                 __state = new HpState { Creature = creature, Before = beforeHp };
-                ModLog.Info($"BloodVialPatch: Prefix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}");
             } catch { }
         }
 
@@ -40,12 +39,10 @@ namespace StatTheRelics.Patches.Relics {
                 var beforeHp = state?.Before ?? GetHp(creature);
                 var afterHp = GetHp(creature);
                 var healed = Math.Max(0, afterHp - beforeHp);
-                ModLog.Info($"BloodVialPatch: Postfix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, afterHp={afterHp}, healed={healed}");
 
                 if (relic != null && healed > 0) {
                     RelicTracker.AddAmount(relic, "HP Healed", healed);
                 } else if (relic != null) {
-                    ModLog.Info("BloodVialPatch: no positive healing this call");
                 }
             } catch { }
         }
@@ -54,10 +51,8 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (creature == null) return 0;
                 var currentHp = ReflectionUtil.GetMemberValue(creature, "CurrentHp");
-                ModLog.Info($"BloodVialPatch: HP via member CurrentHp -> value={currentHp}");
                 if (currentHp != null) return Convert.ToInt32(currentHp);
             } catch {
-                ModLog.Info("BloodVialPatch: failed to get HP via property");
             }
             return 0;
         }

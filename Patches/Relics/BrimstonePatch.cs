@@ -28,7 +28,6 @@ namespace StatTheRelics.Patches.Relics {
                     EnemyStrengthTotal = enemyStrength * livingEnemies
                 };
 
-                ModLog.Info($"BrimstonePatch: Prefix self={selfStrength}, enemyEach={enemyStrength}, livingEnemies={livingEnemies}");
             } catch { }
         }
 
@@ -50,7 +49,6 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (state.SelfStrength > 0) RelicTracker.AddAmount(relic, "Strength Gained", state.SelfStrength);
                 if (state.EnemyStrengthTotal > 0) RelicTracker.AddAmount(relic, "Enemy Strength Given", state.EnemyStrengthTotal);
-                ModLog.Info($"BrimstonePatch: self={state.SelfStrength}, enemyTotal={state.EnemyStrengthTotal}");
             } catch { }
         }
     }

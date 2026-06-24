@@ -30,7 +30,6 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (__instance == null || !__state) return;
                 RelicTracker.AddAmount(__instance, "Freed Cards", 1);
-                ModLog.Info("BrilliantScarfPatch: counted actual free card play");
             } catch { }
         }
     }

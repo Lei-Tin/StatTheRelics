@@ -47,7 +47,6 @@ namespace StatTheRelics.Patches.Relics {
                 RelicTracker.SetText(relic, "Cards Lost", string.IsNullOrWhiteSpace(lostText) ? "Unknown" : lostText);
                 RelicTracker.SetText(relic, "Cards Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
 
-                ModLog.Info($"AstrolabePatch: inferred {lostCards.Count} lost and {obtainedCards.Count} obtained cards");
             } catch { }
         }
     }

@@ -15,7 +15,6 @@ namespace StatTheRelics.Patches.Relics {
                 var creature = __instance?.Owner?.Creature;
                 var beforeHp = GetHp(creature);
                 __state = new HpState { Creature = creature, Before = beforeHp };
-                ModLog.Info($"BlackBloodPatch: Prefix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}");
             } catch { }
         }
 
@@ -25,11 +24,9 @@ namespace StatTheRelics.Patches.Relics {
                 var beforeHp = (__state as HpState)?.Before ?? GetHp(creature);
                 var afterHp = GetHp(creature);
                 var healed = Math.Max(0, afterHp - beforeHp);
-                ModLog.Info($"BlackBloodPatch: Postfix creature={creature?.GetType().FullName ?? "null"}, beforeHp={beforeHp}, afterHp={afterHp}, healed={healed}");
                 if (__instance != null && healed > 0) {
                     RelicTracker.AddAmount(__instance, "HP Healed", healed);
                 } else if (__instance != null) {
-                    ModLog.Info("BlackBloodPatch: no positive healing this combat");
                 }
             } catch { }
         }
@@ -38,10 +35,8 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (creature == null) return 0;
                 var currentHp = ReflectionUtil.GetMemberValue(creature, "CurrentHp");
-                ModLog.Info($"BlackBloodPatch: HP via member CurrentHp -> value={currentHp}");
                 if (currentHp != null) return Convert.ToInt32(currentHp);
             } catch {
-                ModLog.Info("BlackBloodPatch: failed to get HP via property");
             }
             return 0;
         }

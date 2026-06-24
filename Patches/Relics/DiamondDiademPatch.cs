@@ -67,7 +67,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (prevented <= 0) return;
 
                 RelicTracker.AddAmount(relic, "Damage Prevented", prevented);
-                ModLog.Info($"DiamondDiademPowerPatch: amount={amount}, multiplier={__result}, block={block}, prevented={prevented}");
             } catch { }
         }
 

@@ -14,7 +14,6 @@ namespace StatTheRelics.Patches.Relics {
                     RelicTracker.AddAmount(__instance, "Damage Mitigated", Convert.ToInt32(mitigated));
                 }
 
-                ModLog.Info($"BeatingRemnantPatch: preMitigation={amount}, postMitigation={__result}, mitigated={mitigated}");
             } catch { }
         }
     }

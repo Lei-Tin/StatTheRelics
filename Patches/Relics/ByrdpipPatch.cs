@@ -29,7 +29,6 @@ namespace StatTheRelics.Patches.Relics {
         static void CountPlay(Byrdpip relic) {
             try {
                 RelicTracker.AddAmount(relic, "Byrd Swoops Played", 1);
-                ModLog.Info("ByrdpipPatch: counted Byrd Swoop play");
             } catch { }
         }
     }

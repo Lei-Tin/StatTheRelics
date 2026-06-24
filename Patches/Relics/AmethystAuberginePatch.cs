@@ -17,7 +17,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (gold <= 0) return;
 
                 RelicTracker.AddAmount(relic, "Gold Generated", gold);
-                ModLog.Info($"AmethystAuberginePatch: added {gold} gold for {relic.GetType().FullName}");
             } catch { }
         }
     }

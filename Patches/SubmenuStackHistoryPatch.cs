@@ -12,7 +12,6 @@ namespace StatTheRelics.Patches {
         static void AfterPush(NSubmenu screen) {
             try {
                 if (screen is NRunHistory) {
-                    ModLog.Info("SubmenuStackHistoryPatch: RunHistory pushed");
                     RelicStatsPersistence.EnterHistoryView("submenu-stack-push");
                 }
             } catch { }
@@ -29,7 +28,6 @@ namespace StatTheRelics.Patches {
         static void AfterPop(NSubmenu? __state) {
             try {
                 if (__state is NRunHistory) {
-                    ModLog.Info("SubmenuStackHistoryPatch: RunHistory popped");
                     RelicStatsPersistence.RestoreSuspendedRunSnapshotIfAny();
                     RelicStatsPersistence.ForceExitHistoryView("submenu-stack-pop");
                 }

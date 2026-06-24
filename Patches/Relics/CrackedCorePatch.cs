@@ -13,7 +13,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (round <= 1) {
                     RelicTracker.AddAmount(__instance, "Lightning Orbs Channeled", 1);
                 }
-                ModLog.Info($"CrackedCorePatch: round={round}, added={(round <= 1 ? 1 : 0)} lightning orb for {__instance.GetType().FullName}");
             } catch { }
         }
 

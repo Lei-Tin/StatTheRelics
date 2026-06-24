@@ -35,7 +35,6 @@ public static class RelicTracker {
                     if (!string.IsNullOrWhiteSpace(key)) rd.Counters.TryAdd(key, 0);
                 }
             }
-            ModLog.Info($"RelicTracker: initialized counters for {instanceKey}");
             return rd;
         });
     }
@@ -50,8 +49,7 @@ public static class RelicTracker {
             if (instanceKey == null) return;
             var d = GetOrCreate(relic);
             if (d == null) return;
-            var newVal = d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
-            ModLog.Info($"RelicTracker: {instanceKey} - {key} += {amount} => {newVal}");
+            d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
         } catch { }
     }
 
@@ -85,12 +83,10 @@ public static class RelicTracker {
                         if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
                     }
                 }
-                ModLog.Info($"RelicTracker: initialized counters for {relicTypeName}");
                 return rd;
             });
 
-            var newVal = d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
-            ModLog.Info($"RelicTracker: {relicTypeName} - {key} += {amount} => {newVal}");
+            d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
         } catch { }
     }
 
@@ -106,7 +102,6 @@ public static class RelicTracker {
             var d = GetOrCreate(relic);
             if (d == null) return;
             d.TextStats[key] = value;
-            ModLog.Info($"RelicTracker: {instanceKey} - {key} := {value}");
         } catch { }
     }
 
@@ -126,12 +121,10 @@ public static class RelicTracker {
                         if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
                     }
                 }
-                ModLog.Info($"RelicTracker: initialized counters for {relicTypeName}");
                 return rd;
             });
 
             d.TextStats[key] = value;
-            ModLog.Info($"RelicTracker: {relicTypeName} - {key} := {value}");
         } catch { }
     }
 
@@ -179,14 +172,12 @@ public static class RelicTracker {
         historyMode = false;
         bannerNote = string.Empty;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("new run session");
-        ModLog.Info($"RelicTracker: counters reset for new run ({reason}), session={runSessionId}");
     }
 
     public static void MarkOutOfRun(string reason = "inactive") {
         runActive = false;
         historyMode = false;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("mark out of run");
-        ModLog.Info($"RelicTracker: run marked inactive ({reason}), session={runSessionId}");
     }
 
     public static bool IsRunActive => runActive;
@@ -197,7 +188,6 @@ public static class RelicTracker {
             if (RelicStatsPersistence.HistoryViewActive && !historyMode) {
                 historyMode = true;
                 runActive = false;
-                ModLog.Info("RelicTracker: coerced into history mode because history view is active");
             }
 
             // If we left history view, try to restore live snapshot on first tooltip usage outside history stack.
@@ -207,7 +197,6 @@ public static class RelicTracker {
                 if (historyMode && !RelicStatsPersistence.HistoryViewActive) {
                     historyMode = false;
                     runActive = true;
-                    ModLog.Info("RelicTracker: exited history mode via tooltip fallback");
                 }
             }
 
@@ -335,7 +324,6 @@ public static class RelicTracker {
                 runActive = true;
                 RelicTracker.historyMode = false;
             }
-            ModLog.Info($"RelicTracker: loaded snapshot (historyMode={historyMode}, note='{bannerNote}')");
         } catch { }
     }
 
@@ -356,7 +344,6 @@ public static class RelicTracker {
                     if (afterObtained != null) {
                         try {
                             harmony.Patch(afterObtained, postfix: new HarmonyMethod(typeof(RelicPatches).GetMethod(nameof(AfterObtainedPostfix), BindingFlags.Static | BindingFlags.NonPublic)));
-                            ModLog.Info("RelicTracker: patched RelicModel.AfterObtained for tracker seeding");
                         } catch (Exception ex) {
                             ModLog.Info($"RelicTracker: failed to patch RelicModel.AfterObtained - {ex.GetType().Name}: {ex.Message}");
                         }
@@ -364,8 +351,6 @@ public static class RelicTracker {
                         ModLog.Info("RelicTracker: RelicModel.AfterObtained not found");
                     }
                 }
-
-                ModLog.Info("RelicTracker: dynamic relic scan skipped; only base RelicModel flash patched");
             } catch { }
         }
 
@@ -386,8 +371,7 @@ public static class RelicTracker {
             try {
                 var tk = GetTypeKey(__instance);
                 if (tk == null) return;
-                var created = GetOrCreate(__instance) != null;
-                ModLog.Info($"RelicTracker: AfterObtained seed for {tk}, created={created}");
+                GetOrCreate(__instance);
             } catch { }
         }
 
@@ -428,7 +412,6 @@ public static class RelicTracker {
                 if (historyMode && !RelicStatsPersistence.HistoryViewActive) {
                     historyMode = false;
                     runActive = true;
-                    ModLog.Info("RelicTracker: exited history mode and resumed live counters (counter fallback)");
                 }
             }
         } catch { }

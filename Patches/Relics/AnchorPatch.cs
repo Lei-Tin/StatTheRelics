@@ -15,7 +15,6 @@ namespace StatTheRelics.Patches.Relics {
                 var creature = __instance?.Owner?.Creature;
                 var beforeBlock = GetBlock(creature);
                 __state = new BlockState { Creature = creature, Before = beforeBlock };
-                ModLog.Info($"AnchorPatch: Prefix creature={creature?.GetType().FullName ?? "null"}, beforeBlock={beforeBlock}");
             } catch { }
         }
 
@@ -25,7 +24,6 @@ namespace StatTheRelics.Patches.Relics {
                 var beforeBlock = ( __state as BlockState )?.Before ?? GetBlock(creature);
                 var afterBlock = GetBlock(creature);
                 var gained = Math.Max(0, afterBlock - beforeBlock);
-                ModLog.Info($"AnchorPatch: Postfix creature={creature?.GetType().FullName ?? "null"}, beforeBlock={beforeBlock}, afterBlock={afterBlock}, gained={gained}");
                 if (gained > 0 && __instance != null) RelicTracker.AddAmount(__instance, "Block Generated", gained);
             } catch { }
         }
@@ -35,10 +33,8 @@ namespace StatTheRelics.Patches.Relics {
                 if (creature == null) return 0;
                 var block = ReflectionUtil.GetMemberValue(creature, "Block")
                     ?? ReflectionUtil.GetMemberValue(creature, "CurrentBlock");
-                ModLog.Info($"AnchorPatch: block via member -> value={block}");
                 if (block != null) return Convert.ToInt32(block);
             } catch {
-                ModLog.Info("AnchorPatch: failed to get block via property");
             }
             return 0;
         }

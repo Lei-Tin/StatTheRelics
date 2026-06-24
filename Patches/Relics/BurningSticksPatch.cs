@@ -32,7 +32,6 @@ namespace StatTheRelics.Patches.Relics {
                     CardType = card != null ? card.Type : default
                 };
 
-                ModLog.Info($"BurningSticksPatch: Prefix card={((BurningSticksState)__state).CardName}, type={((BurningSticksState)__state).CardType}, wasUsed={wasUsed}, shouldTrigger={shouldTrigger}");
             } catch { }
         }
 
@@ -53,7 +52,6 @@ namespace StatTheRelics.Patches.Relics {
         static void LogAfter(BurningSticks relic, BurningSticksState state, TaskStatus status) {
             try {
                 var wasUsedAfter = GetWasUsedThisCombat(relic);
-                ModLog.Info($"BurningSticksPatch: Postfix card={state.CardName}, type={state.CardType}, taskStatus={status}, wasUsedBefore={state.WasUsedBefore}, wasUsedAfter={wasUsedAfter}, shouldTrigger={state.ShouldTrigger}");
             } catch { }
         }
 
@@ -82,7 +80,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (wasUsedBefore || !value) return;
 
                 RelicTracker.AddAmount(__instance, "Cards Generated", 1);
-                ModLog.Info("BurningSticksWasUsedSetterPatch: WasUsedThisCombat false -> true, counted generated card");
             } catch { }
         }
     }

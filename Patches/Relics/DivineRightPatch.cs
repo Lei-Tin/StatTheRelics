@@ -10,7 +10,6 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(DivineRight __instance, object room) {
             try {
                 var combat = IsCombatRoom(room);
-                ModLog.Info($"DivineRightPatch: room={room?.GetType().FullName ?? "null"}, combat={combat}");
 
                 if (!combat) {
                     return;
@@ -21,7 +20,6 @@ namespace StatTheRelics.Patches.Relics {
                     RelicTracker.AddAmount(__instance, "Stars Gained", starsGained);
                 }
 
-                ModLog.Info($"DivineRightPatch: stars={starsGained}");
             } catch { }
         }
 

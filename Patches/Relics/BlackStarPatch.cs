@@ -12,7 +12,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (__instance == null) return;
 
                 RelicTracker.AddAmount(__instance, "Relics Given", 1);
-                ModLog.Info($"BlackStarPatch: incremented Relics Given for {__instance.GetType().FullName}");
             } catch { }
         }
     }

@@ -14,7 +14,6 @@ namespace StatTheRelics.Patches.Relics {
                     RelicTracker.AddAmount(__instance, "Cards Drawn", Convert.ToInt32(extraDraw));
                 }
 
-                ModLog.Info($"BagOfPreparationPatch: player={player?.GetType().FullName ?? "null"}, baseCount={count}, result={__result}, extra={extraDraw}");
             } catch { }
         }
     }

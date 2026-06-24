@@ -15,7 +15,6 @@ namespace StatTheRelics.Patches.Relics {
                     RelicTracker.AddAmount(__instance, "Card Drawn Reduced", Convert.ToInt32(reducedDraw));
                 }
 
-                ModLog.Info($"BigMushroomPatch: player={player?.GetType().FullName ?? "null"}, baseCount={cardsToDraw}, result={__result}, reduced={reducedDraw}");
             } catch { }
         }
     }

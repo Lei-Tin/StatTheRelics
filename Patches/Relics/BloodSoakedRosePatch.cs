@@ -16,7 +16,6 @@ namespace StatTheRelics.Patches.Relics {
 
                 RelicTracker.AddAmount(bloodSoakedRose, "Energy Given", 1);
 
-                ModLog.Info($"BloodSoakedRosePatch: owner turn start counted for player={player.GetType().FullName}");
 
                 // TODO: Also add tracking for the card generated (enthralled), how many times it is played
             } catch { }

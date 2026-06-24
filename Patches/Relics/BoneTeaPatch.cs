@@ -34,7 +34,6 @@ namespace StatTheRelics.Patches.Relics {
                     UpgradableInHand = upgradable
                 };
 
-                ModLog.Info($"BoneTeaPatch: Prefix round={round}, wasUsedUp={wasUsedUp}, upgradableInHand={upgradable}");
             } catch { }
         }
 
@@ -52,7 +51,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (!string.IsNullOrWhiteSpace(relicTypeName)) {
                     RelicTracker.AddAmountByType(relicTypeName, "Cards Upgraded", state.UpgradableInHand);
                 }
-                ModLog.Info($"BoneTeaPatch: Postfix added Cards Upgraded={state.UpgradableInHand}");
             } catch { }
         }
 

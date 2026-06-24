@@ -37,7 +37,6 @@ namespace StatTheRelics.Patches.Relics {
 
                 RelicTracker.SetText(relic, TrackedSwiftCardsDisplayKey, SerializeCardList(mergedTracked));
 
-                ModLog.Info($"BeautifulBraceletSwiftTracker: tracked total Swift(3) cards={CountTotal(mergedTracked)}, newlyAdded={CountTotal(added)}");
             } catch { }
         }
 
@@ -182,7 +181,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (!RelicTracker.HasTrackedRelicType(BeautifulBraceletSwiftTracker.BeautifulBraceletTypeName)) return;
                 var counted = BeautifulBraceletSwiftTracker.TryCountTrackedSwift3CardPlay(__instance);
                 if (!counted) return;
-                ModLog.Info($"BeautifulBraceletCardPlayPatch: counted play for card={__instance.GetType().FullName}");
             } catch { }
         }
     }

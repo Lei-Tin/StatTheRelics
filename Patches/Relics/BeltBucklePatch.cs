@@ -14,7 +14,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (alreadyApplied) return;
 
                 RelicTracker.AddAmount(__instance, "Times Dexterity Applied", 1);
-                ModLog.Info("BeltBucklePatch: counted Times Dexterity Applied +1");
             } catch { }
         }
     }

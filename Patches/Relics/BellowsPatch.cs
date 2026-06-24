@@ -37,7 +37,6 @@ namespace StatTheRelics.Patches.Relics {
                     UpgradableInHand = upgradable
                 };
 
-                ModLog.Info($"BellowsPatch: Prefix round={round}, isOwnerTurn={isOwnerTurn}, upgradableInHand={upgradable}");
             } catch { }
         }
 
@@ -50,7 +49,6 @@ namespace StatTheRelics.Patches.Relics {
                 if (state.UpgradableInHand <= 0) return;
 
                 RelicTracker.AddAmount(__instance, "Cards Upgraded", state.UpgradableInHand);
-                ModLog.Info($"BellowsPatch: Postfix added Cards Upgraded={state.UpgradableInHand}");
             } catch { }
         }
 

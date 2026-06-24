@@ -11,7 +11,6 @@ namespace StatTheRelics.Patches {
     // Targeted save/load hooks to persist relic stats alongside run saves and run history files.
     internal static class RelicStatsSavePatches {
         public static void Apply(Harmony harmony) {
-            ModLog.Info("RelicStatsSavePatches: Apply invoked");
             PatchSaveRun(harmony);
             PatchLoadRun(harmony);
             PatchInitializeSavedRun(harmony);
@@ -23,14 +22,12 @@ namespace StatTheRelics.Patches {
             var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "SaveRun", new[] { typeof(AbstractRoom) })
                          ?? throw new MissingMethodException("RunSaveManager.SaveRun(AbstractRoom) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterSaveRun)));
-            ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterSaveRun");
         }
 
         static void PatchLoadRun(Harmony harmony) {
             var target = AccessTools.DeclaredMethod(typeof(RunSaveManager), "LoadRunSave", Type.EmptyTypes)
                          ?? throw new MissingMethodException("RunSaveManager.LoadRunSave() not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadRunSave)));
-            ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterLoadRunSave");
         }
 
         static void PatchInitializeSavedRun(Harmony harmony) {
@@ -42,56 +39,46 @@ namespace StatTheRelics.Patches {
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterInitializeSavedRun)));
-            ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterInitializeSavedRun");
         }
 
         static void PatchSaveHistory(Harmony harmony) {
             var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "SaveHistoryInternal", new[] { typeof(string), typeof(string) })
                          ?? throw new MissingMethodException("RunHistorySaveManager.SaveHistoryInternal(string, string) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterSaveHistoryInternal)));
-            ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterSaveHistoryInternal");
         }
 
         static void PatchLoadHistory(Harmony harmony) {
             var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "LoadHistory", new[] { typeof(string) })
                          ?? throw new MissingMethodException("RunHistorySaveManager.LoadHistory(string) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadHistory)));
-            ModLog.Info($"RelicStatsSavePatches: patched {target.DeclaringType?.FullName}.{target.Name} -> AfterLoadHistory");
         }
 
         static void AfterSaveRun(RunSaveManager __instance) {
             try {
-                ModLog.Info("RelicStatsSavePatches: AfterSaveRun invoked");
                 var path = GetProperty<string>(__instance, "CurrentRunSavePath");
                 if (string.IsNullOrEmpty(path)) return;
 
-                ModLog.Info($"RelicStatsSavePatches: AfterSaveRun saving sidecar for {path}");
                 RelicStatsPersistence.SaveSnapshot(path);
             } catch { }
         }
 
         static void AfterLoadRunSave(RunSaveManager __instance) {
             try {
-                ModLog.Info("RelicStatsSavePatches: AfterLoadRunSave invoked");
                 var path = GetProperty<string>(__instance, "CurrentRunSavePath");
                 if (string.IsNullOrEmpty(path)) return;
 
-                ModLog.Info($"RelicStatsSavePatches: AfterLoadRunSave staging sidecar from {path}");
                 RelicStatsPersistence.StageRunSnapshot(path);
             } catch { }
         }
 
         static void AfterInitializeSavedRun(RunManager __instance) {
             try {
-                ModLog.Info("RelicStatsSavePatches: AfterInitializeSavedRun invoked");
-                ModLog.Info("RelicStatsSavePatches: AfterInitializeSavedRun applying staged snapshot");
                 RelicStatsPersistence.ApplyStagedRunSnapshot();
             } catch { }
         }
 
         static void AfterSaveHistoryInternal(RunHistorySaveManager __instance, string path, string content) {
             try {
-                ModLog.Info("RelicStatsSavePatches: AfterSaveHistoryInternal invoked");
                 var historyPath = GetProperty<string?>(__instance, "HistoryPath");
                 if (string.IsNullOrEmpty(historyPath)) return;
 
@@ -100,19 +87,16 @@ namespace StatTheRelics.Patches {
                     ? historyPath
                     : Path.Combine(historyPath, fileName);
 
-                ModLog.Info($"RelicStatsSavePatches: AfterSaveHistoryInternal saving sidecar for {basePath}");
                 RelicStatsPersistence.SaveSnapshot(basePath);
             } catch { }
         }
 
         static void AfterLoadHistory(RunHistorySaveManager __instance, string fileName, ReadSaveResult<RunHistory> __result) {
             try {
-                ModLog.Info("RelicStatsSavePatches: AfterLoadHistory invoked");
                 var historyPath = GetProperty<string?>(__instance, "HistoryPath");
                 if (string.IsNullOrEmpty(historyPath)) return;
 
                 var basePath = Path.Combine(historyPath, Path.GetFileName(fileName ?? string.Empty));
-                ModLog.Info($"RelicStatsSavePatches: AfterLoadHistory staging history snapshot from {basePath}");
                 RelicStatsPersistence.StageHistorySnapshot(basePath);
             } catch { }
         }

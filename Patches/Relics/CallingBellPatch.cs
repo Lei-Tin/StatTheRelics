@@ -48,7 +48,6 @@ namespace StatTheRelics.Patches.Relics {
                 var added = DeckUtil.FindAddedCards(state.BeforeDeck, after);
                 var curse = added.Count > 0 ? string.Join("\n", added) : "Unknown";
                 RelicTracker.SetText(relic, "Curse", curse);
-                ModLog.Info($"CallingBellPatch: curse={curse}");
             } catch { }
         }
     }
@@ -134,7 +133,6 @@ namespace StatTheRelics.Patches.Relics {
 
                 var text = names.Count > 0 ? string.Join("\n", names) : "Unknown";
                 RelicTracker.SetText(relic, "Relics Offered", text);
-                ModLog.Info($"CallingBellRewardTracker: relics={text.Replace("\n", ", ")}");
             } catch { }
         }
 

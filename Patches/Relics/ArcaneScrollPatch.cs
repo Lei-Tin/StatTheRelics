@@ -44,7 +44,6 @@ namespace StatTheRelics.Patches.Relics {
 
                 RelicTracker.SetText(relic, "Card Obtained", string.IsNullOrWhiteSpace(obtainedText) ? "Unknown" : obtainedText);
 
-                ModLog.Info($"ArcaneScrollPatch: inferred {obtainedCards.Count} obtained cards");
             } catch { }
         }
     }

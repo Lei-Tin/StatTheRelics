@@ -48,7 +48,6 @@ namespace StatTheRelics.Patches.Relics {
 
                 RelicTracker.SetText(relic, "Cards Removed", string.IsNullOrWhiteSpace(removedText) ? "Unknown" : removedText);
 
-                ModLog.Info($"BiiigHugPatch: inferred {removedCards.Count} removed cards");
             } catch { }
         }
     }

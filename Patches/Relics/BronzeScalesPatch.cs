@@ -68,7 +68,6 @@ namespace StatTheRelics.Patches.Relics {
 
                         var amount = Math.Min(state.Cap, total);
                         if (amount > 0) RelicTracker.AddAmount(state.Relic, "Thorns Damage", amount);
-                        ModLog.Info($"BronzeScalesPatch: thorns damage={amount}, rawTotal={total}, cap={state.Cap}");
                     } catch { }
                 });
             } catch { }
