@@ -23,7 +23,7 @@ namespace StatTheRelics.RelicStats {
         static SnapshotEnvelope? suspendedRunSnapshot; // active run snapshot saved while viewing history
         static volatile bool historyViewActive;
 
-        public static void SaveSnapshot(string basePath) {
+        public static void SaveSnapshot(string basePath, object? saveStore = null) {
             try {
                 var snapshot = RelicTracker.ExportSnapshot();
                 var textSnapshot = RelicTracker.ExportTextSnapshot();
@@ -34,17 +34,21 @@ namespace StatTheRelics.RelicStats {
                     Note = ""
                 };
                 var path = SidecarPath(basePath);
-                var dir = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                 var json = JsonSerializer.Serialize(envelope, jsonOptions);
-                File.WriteAllText(path, json);
+
+                if (TryWriteWithSaveStore(saveStore, path, json)) return;
+
+                var physicalPath = PhysicalSidecarPath(basePath);
+                var dir = Path.GetDirectoryName(physicalPath);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllText(physicalPath, json);
             } catch (Exception ex) {
                 ModLog.Info($"RelicStatsPersistence: failed to save sidecar for {basePath} - {ex.Message}");
             }
         }
 
-        public static void StageRunSnapshot(string basePath) {
-            pendingRunSnapshot = LoadEnvelope(basePath, "run");
+        public static void StageRunSnapshot(string basePath, object? saveStore = null) {
+            pendingRunSnapshot = LoadEnvelope(basePath, "run", saveStore);
         }
 
         public static void ApplyStagedRunSnapshot() {
@@ -53,10 +57,10 @@ namespace StatTheRelics.RelicStats {
             pendingRunSnapshot = null;
         }
 
-        public static void StageHistorySnapshot(string basePath) {
+        public static void StageHistorySnapshot(string basePath, object? saveStore = null) {
             EnterHistoryView("load-history");
 
-            pendingHistorySnapshot = LoadEnvelope(basePath, "history");
+            pendingHistorySnapshot = LoadEnvelope(basePath, "history", saveStore);
             if (pendingHistorySnapshot == null) {
                 pendingHistorySnapshot = new SnapshotEnvelope {
                     ModVersion = currentModVersion,
@@ -121,13 +125,24 @@ namespace StatTheRelics.RelicStats {
             RelicTracker.LoadSnapshot(counters, textStats, note, historyMode, env?.StatsUnavailable == true);
         }
 
-        static SnapshotEnvelope? LoadEnvelope(string basePath, string label) {
+        static SnapshotEnvelope? LoadEnvelope(string basePath, string label, object? saveStore = null) {
             try {
                 var path = SidecarPath(basePath);
-                if (!File.Exists(path)) {
+                string? json = null;
+                if (TryReadWithSaveStore(saveStore, path, out var storeJson)) {
+                    json = storeJson;
+                } else {
+                    var physicalPath = PhysicalSidecarPath(basePath);
+                    if (!File.Exists(physicalPath)) {
+                        return null;
+                    }
+                    json = File.ReadAllText(physicalPath);
+                }
+
+                if (string.IsNullOrWhiteSpace(json)) {
                     return null;
                 }
-                var json = File.ReadAllText(path);
+
                 var env = JsonSerializer.Deserialize<SnapshotEnvelope>(json, jsonOptions);
                 if (env == null) return null;
                 if (!IsCompatibleVersion(env.ModVersion)) return VersionMismatchEnvelope(env.ModVersion);
@@ -139,13 +154,75 @@ namespace StatTheRelics.RelicStats {
         }
 
         static string SidecarPath(string basePath) {
-            var fullBase = basePath;
+            var dir = GetDirectoryName(basePath);
+            var fileName = GetFileName(basePath);
+            if (string.IsNullOrWhiteSpace(fileName)) return basePath + ".relicstats.json";
+            return string.IsNullOrWhiteSpace(dir)
+                ? "relicstats/" + fileName + ".relicstats.json"
+                : dir + "/relicstats/" + fileName + ".relicstats.json";
+        }
+
+        static string PhysicalSidecarPath(string basePath) {
+            var logicalSidecar = SidecarPath(basePath);
+            var fullBase = logicalSidecar;
             try {
-                fullBase = Path.IsPathRooted(basePath)
-                    ? basePath
-                    : Path.GetFullPath(basePath);
+                fullBase = Path.IsPathRooted(logicalSidecar)
+                    ? logicalSidecar
+                    : Path.GetFullPath(logicalSidecar);
             } catch { }
-            return fullBase + ".relicstats.json";
+            return fullBase;
+        }
+
+        static bool TryWriteWithSaveStore(object? saveStore, string path, string json) {
+            if (saveStore == null) return false;
+            try {
+                var dir = GetDirectoryName(path);
+                if (!string.IsNullOrWhiteSpace(dir)) {
+                    var createDirectory = saveStore.GetType().GetMethod("CreateDirectory", new[] { typeof(string) });
+                    createDirectory?.Invoke(saveStore, new object[] { dir });
+                }
+
+                var writeFile = saveStore.GetType().GetMethod("WriteFile", new[] { typeof(string), typeof(string) });
+                if (writeFile == null) return false;
+                writeFile.Invoke(saveStore, new object[] { path, json });
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        static bool TryReadWithSaveStore(object? saveStore, string path, out string? json) {
+            json = null;
+            if (saveStore == null) return false;
+            try {
+                var fileExists = saveStore.GetType().GetMethod("FileExists", new[] { typeof(string) });
+                if (fileExists == null) return false;
+                if (fileExists.Invoke(saveStore, new object[] { path }) is not bool exists || !exists) return false;
+
+                var readFile = saveStore.GetType().GetMethod("ReadFile", new[] { typeof(string) });
+                if (readFile == null) return false;
+                json = readFile.Invoke(saveStore, new object[] { path }) as string;
+                return true;
+            } catch {
+                json = null;
+                return false;
+            }
+        }
+
+        static string? GetDirectoryName(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            var slash = path.LastIndexOf('/');
+            var backslash = path.LastIndexOf('\\');
+            var index = Math.Max(slash, backslash);
+            return index > 0 ? path[..index] : null;
+        }
+
+        static string? GetFileName(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            var slash = path.LastIndexOf('/');
+            var backslash = path.LastIndexOf('\\');
+            var index = Math.Max(slash, backslash);
+            return index >= 0 && index < path.Length - 1 ? path[(index + 1)..] : path;
         }
 
         static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {

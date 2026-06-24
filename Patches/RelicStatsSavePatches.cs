@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Rooms;
@@ -58,7 +59,7 @@ namespace StatTheRelics.Patches {
                 var path = GetProperty<string>(__instance, "CurrentRunSavePath");
                 if (string.IsNullOrEmpty(path)) return;
 
-                RelicStatsPersistence.SaveSnapshot(path);
+                RelicStatsPersistence.SaveSnapshot(path, GetField<object>(__instance, "_saveStore"));
             } catch { }
         }
 
@@ -67,7 +68,7 @@ namespace StatTheRelics.Patches {
                 var path = GetProperty<string>(__instance, "CurrentRunSavePath");
                 if (string.IsNullOrEmpty(path)) return;
 
-                RelicStatsPersistence.StageRunSnapshot(path);
+                RelicStatsPersistence.StageRunSnapshot(path, GetField<object>(__instance, "_saveStore"));
             } catch { }
         }
 
@@ -79,15 +80,8 @@ namespace StatTheRelics.Patches {
 
         static void AfterSaveHistoryInternal(RunHistorySaveManager __instance, string path, string content) {
             try {
-                var historyPath = GetProperty<string?>(__instance, "HistoryPath");
-                if (string.IsNullOrEmpty(historyPath)) return;
-
-                var fileName = Path.GetFileName(path ?? string.Empty);
-                var basePath = string.IsNullOrEmpty(fileName)
-                    ? historyPath
-                    : Path.Combine(historyPath, fileName);
-
-                RelicStatsPersistence.SaveSnapshot(basePath);
+                if (string.IsNullOrEmpty(path)) return;
+                RelicStatsPersistence.SaveSnapshot(path, GetField<object>(__instance, "_saveStore"));
             } catch { }
         }
 
@@ -96,8 +90,8 @@ namespace StatTheRelics.Patches {
                 var historyPath = GetProperty<string?>(__instance, "HistoryPath");
                 if (string.IsNullOrEmpty(historyPath)) return;
 
-                var basePath = Path.Combine(historyPath, Path.GetFileName(fileName ?? string.Empty));
-                RelicStatsPersistence.StageHistorySnapshot(basePath);
+                var basePath = Path.Combine(historyPath, fileName ?? string.Empty);
+                RelicStatsPersistence.StageHistorySnapshot(basePath, GetField<object>(__instance, "_saveStore"));
             } catch { }
         }
 
@@ -107,6 +101,14 @@ namespace StatTheRelics.Patches {
                 var getter = AccessTools.PropertyGetter(obj.GetType(), name) ?? AccessTools.Method(obj.GetType(), "get_" + name);
                 if (getter == null) return default;
                 return (T?)getter.Invoke(obj, null);
+            } catch { return default; }
+        }
+
+        static T? GetField<T>(object obj, string name) {
+            try {
+                var field = AccessTools.Field(obj.GetType(), name);
+                if (field == null) return default;
+                return (T?)field.GetValue(obj);
             } catch { return default; }
         }
     }
