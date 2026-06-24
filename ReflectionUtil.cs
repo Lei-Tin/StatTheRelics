@@ -143,11 +143,23 @@ namespace StatTheRelics {
             try {
                 if (locString == null) return null;
 
+                var type = locString.GetType();
+                foreach (var methodName in new[] { "GetFormattedText", "GetRawText" }) {
+                    try {
+                        var method = type.GetMethod(methodName, Flags, null, Type.EmptyTypes, null);
+                        var value = method?.Invoke(locString, Array.Empty<object>());
+                        if (value is string methodText && !string.IsNullOrWhiteSpace(methodText)) return methodText;
+                    } catch { }
+                }
+
                 var text = GetMemberValue(locString, "Text")
                     ?? GetMemberValue(locString, "Value")
                     ?? GetMemberValue(locString, "Localized");
 
                 if (text is string s && !string.IsNullOrWhiteSpace(s)) return s;
+
+                var fallback = locString.ToString();
+                if (!string.IsNullOrWhiteSpace(fallback)) return fallback;
 
                 return null;
             } catch {
