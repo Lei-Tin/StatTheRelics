@@ -63,7 +63,7 @@ namespace StatTheRelics.Patches.Relics {
                         var total = 0;
                         foreach (var result in task.Result) {
                             if (result == null) continue;
-                            total += Math.Max(0, result.TotalDamage - result.OverkillDamage);
+                            total += Math.Max(0, result.TotalDamage);
                         }
 
                         var amount = Math.Min(state.Cap, total);

@@ -5,17 +5,17 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Rooms;
-using StatTheRelics;
 
 namespace StatTheRelics.Patches.Relics {
-    // Capture actual healing done by Burning Blood's own Heal call.
-    [HarmonyPatch(typeof(BurningBlood), nameof(BurningBlood.AfterCombatVictory))]
-    public static class BurningBloodPatch {
-        [ThreadStatic] internal static BurningBlood? Current;
+    [HarmonyPatch(typeof(MeatOnTheBone), nameof(MeatOnTheBone.AfterCombatVictoryEarly))]
+    public static class MeatOnTheBonePatch {
+        [ThreadStatic] internal static MeatOnTheBone? Current;
 
-        static void Prefix(BurningBlood __instance, CombatRoom _) {
+        static void Prefix(MeatOnTheBone __instance, CombatRoom _) {
             try {
-                if (__instance?.Owner?.Creature == null || __instance.Owner.Creature.IsDead) return;
+                if (__instance?.Owner?.Creature == null) return;
+                if (__instance.Owner.Creature.IsDead) return;
+                if (!WillHealOnCombatFinished(__instance)) return;
                 Current = __instance;
             } catch { }
         }
@@ -28,6 +28,18 @@ namespace StatTheRelics.Patches.Relics {
                 Current = null;
             }
         }
+
+        static bool WillHealOnCombatFinished(MeatOnTheBone relic) {
+            try {
+                var creature = relic.Owner?.Creature;
+                if (creature == null) return false;
+                var threshold = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(relic, "HpThreshold", 50));
+                var hpLimit = (int)(creature.MaxHp * threshold / 100m);
+                return creature.CurrentHp <= hpLimit;
+            } catch {
+                return false;
+            }
+        }
     }
 
     [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Heal), new Type[] {
@@ -35,15 +47,15 @@ namespace StatTheRelics.Patches.Relics {
         typeof(decimal),
         typeof(bool)
     })]
-    public static class BurningBloodHealPatch {
+    public static class MeatOnTheBoneHealPatch {
         class HealState {
-            public BurningBlood? Relic { get; set; }
+            public MeatOnTheBone? Relic { get; set; }
             public int ExpectedHeal { get; set; }
         }
 
         static void Prefix(Creature creature, decimal amount, ref object __state) {
             try {
-                var relic = BurningBloodPatch.Current;
+                var relic = MeatOnTheBonePatch.Current;
                 if (relic == null || creature == null || relic.Owner?.Creature != creature) return;
                 __state = new HealState {
                     Relic = relic,

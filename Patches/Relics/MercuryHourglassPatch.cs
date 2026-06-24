@@ -7,35 +7,25 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(FestivePopper), nameof(FestivePopper.AfterPlayerTurnStart))]
-    public static class FestivePopperPatch {
-        [ThreadStatic] internal static FestivePopper? Current;
+    [HarmonyPatch(typeof(MercuryHourglass), nameof(MercuryHourglass.AfterPlayerTurnStart))]
+    public static class MercuryHourglassPatch {
+        [ThreadStatic] internal static MercuryHourglass? Current;
 
-        class TriggerState {
-            public bool Triggered { get; set; }
-        }
-
-        static void Prefix(FestivePopper __instance, PlayerChoiceContext choiceContext, Player player, ref object __state) {
+        static void Prefix(MercuryHourglass __instance, PlayerChoiceContext choiceContext, Player player) {
             try {
+                _ = choiceContext;
                 if (__instance == null || player == null || __instance.Owner != player) return;
-                if (__instance.Owner.PlayerCombatState?.TurnNumber != 1) return;
-
                 Current = __instance;
-                __state = new TriggerState { Triggered = true };
             } catch { }
         }
 
-        static void Postfix(FestivePopper __instance, Task __result, object __state) {
+        static void Postfix(Task __result) {
             try {
-                Current = null;
-                var state = __state as TriggerState;
-                if (state == null || !state.Triggered) return;
-
                 _ = __result;
+                Current = null;
             } catch {
                 Current = null;
             }
@@ -48,15 +38,15 @@ namespace StatTheRelics.Patches.Relics {
         typeof(DamageVar),
         typeof(Creature)
     })]
-    public static class FestivePopperDamagePatch {
+    public static class MercuryHourglassDamagePatch {
         class DamageState {
-            public FestivePopper? Relic { get; set; }
+            public MercuryHourglass? Relic { get; set; }
         }
 
         static void Prefix(ref object __state) {
             try {
-                if (FestivePopperPatch.Current == null) return;
-                __state = new DamageState { Relic = FestivePopperPatch.Current };
+                if (MercuryHourglassPatch.Current == null) return;
+                __state = new DamageState { Relic = MercuryHourglassPatch.Current };
             } catch { }
         }
 

@@ -11,31 +11,28 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(FestivePopper), nameof(FestivePopper.AfterPlayerTurnStart))]
-    public static class FestivePopperPatch {
-        [ThreadStatic] internal static FestivePopper? Current;
+    [HarmonyPatch(typeof(Metronome), nameof(Metronome.AfterOrbChanneled))]
+    public static class MetronomePatch {
+        [ThreadStatic] internal static Metronome? Current;
 
-        class TriggerState {
-            public bool Triggered { get; set; }
-        }
-
-        static void Prefix(FestivePopper __instance, PlayerChoiceContext choiceContext, Player player, ref object __state) {
+        static void Prefix(Metronome __instance, PlayerChoiceContext choiceContext, Player player, OrbModel orb) {
             try {
+                _ = choiceContext;
+                _ = orb;
                 if (__instance == null || player == null || __instance.Owner != player) return;
-                if (__instance.Owner.PlayerCombatState?.TurnNumber != 1) return;
+
+                var orbCount = Math.Max(1, ReflectionUtil.GetDynamicVarIntValue(__instance, "OrbCount", 7));
+                var orbsChanneled = ReflectionUtil.GetIntMemberValue(__instance, "_orbsChanneled");
+                if (orbsChanneled + 1 != orbCount) return;
 
                 Current = __instance;
-                __state = new TriggerState { Triggered = true };
             } catch { }
         }
 
-        static void Postfix(FestivePopper __instance, Task __result, object __state) {
+        static void Postfix(Task __result) {
             try {
-                Current = null;
-                var state = __state as TriggerState;
-                if (state == null || !state.Triggered) return;
-
                 _ = __result;
+                Current = null;
             } catch {
                 Current = null;
             }
@@ -48,15 +45,15 @@ namespace StatTheRelics.Patches.Relics {
         typeof(DamageVar),
         typeof(Creature)
     })]
-    public static class FestivePopperDamagePatch {
+    public static class MetronomeDamagePatch {
         class DamageState {
-            public FestivePopper? Relic { get; set; }
+            public Metronome? Relic { get; set; }
         }
 
         static void Prefix(ref object __state) {
             try {
-                if (FestivePopperPatch.Current == null) return;
-                __state = new DamageState { Relic = FestivePopperPatch.Current };
+                if (MetronomePatch.Current == null) return;
+                __state = new DamageState { Relic = MetronomePatch.Current };
             } catch { }
         }
 
