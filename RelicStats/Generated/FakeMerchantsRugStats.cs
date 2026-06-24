@@ -7,8 +7,7 @@ namespace StatTheRelics.RelicStats.Generated {
         public override IReadOnlyList<string> DefaultCounters => new string[] { };
 
         public override string Format(IReadOnlyDictionary<string,int> counters, bool historyMode, string bannerNote) {
-            var prefix = historyMode && !string.IsNullOrEmpty(bannerNote) ? bannerNote + "\n" : string.Empty;
-            return $"{prefix}Stats are not available for this relic.";
+            return FormatNoStats(historyMode, bannerNote);
         }
     }
 }

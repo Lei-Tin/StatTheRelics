@@ -15,10 +15,10 @@ namespace StatTheRelics.RelicStats.Generated {
 
             var sb = new StringBuilder();
             if (historyMode && !string.IsNullOrEmpty(bannerNote)) sb.AppendLine(bannerNote);
-            sb.AppendLine("Swift Cards Enchanted:");
-            sb.AppendLine(swiftCardsEnchanted);
-            sb.AppendLine();
             sb.AppendLine($"Swift Cards Played: {swiftCardsPlayed}");
+            sb.AppendLine();
+            sb.AppendLine("Cards Enchanted:");
+            sb.AppendLine(swiftCardsEnchanted);
             return sb.ToString().TrimEnd();
         }
     }

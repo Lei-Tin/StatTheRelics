@@ -49,7 +49,7 @@ namespace StatTheRelics.Patches.Relics {
                 var tracked = LoadTrackedHistogram();
                 if (tracked.Count == 0) return false;
 
-                var cardName = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                var cardName = DeckUtil.GetCardMatchName(card);
                 if (string.IsNullOrWhiteSpace(cardName)) return false;
 
                 var isTracked = tracked.TryGetValue(cardName, out var n) && n > 0;
@@ -66,7 +66,7 @@ namespace StatTheRelics.Patches.Relics {
             var result = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var card in DeckUtil.EnumerateDeckCards(owner)) {
                 if (!IsSwift3(card)) continue;
-                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                var name = DeckUtil.GetCardMatchName(card);
                 if (string.IsNullOrWhiteSpace(name)) continue;
                 result[name] = result.TryGetValue(name, out var v) ? v + 1 : 1;
             }
@@ -132,7 +132,7 @@ namespace StatTheRelics.Patches.Relics {
 
             var lines = raw.Replace("\r", string.Empty).Split('\n');
             foreach (var line in lines) {
-                var name = (line ?? string.Empty).Trim();
+                var name = DeckUtil.NormalizeCardNameForMatching(line);
                 if (string.IsNullOrWhiteSpace(name) || string.Equals(name, "None", StringComparison.OrdinalIgnoreCase)) continue;
                 result[name] = result.TryGetValue(name, out var current) ? current + 1 : 1;
             }

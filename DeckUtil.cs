@@ -39,6 +39,21 @@ namespace StatTheRelics {
             return card.GetType().Name;
         }
 
+        public static string GetCardMatchName(object card) {
+            var title = ReflectionUtil.GetCardBaseTitle(card)
+                ?? ReflectionUtil.GetCardTitle(card)
+                ?? card.GetType().Name;
+            return NormalizeCardNameForMatching(title);
+        }
+
+        public static string NormalizeCardNameForMatching(string? cardName) {
+            var normalized = (cardName ?? string.Empty).Trim();
+            while (normalized.EndsWith("+", StringComparison.Ordinal)) {
+                normalized = normalized.Substring(0, normalized.Length - 1).TrimEnd();
+            }
+            return normalized;
+        }
+
         static string AddUpgradeSuffix(object card, string title) {
             try {
                 var name = (title ?? string.Empty).Trim();

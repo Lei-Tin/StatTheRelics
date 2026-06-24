@@ -5,6 +5,7 @@ using System.Text;
 namespace StatTheRelics.RelicStats {
     // Base definition for per-relic stat configuration. Override DefaultCounters and/or Format for custom displays.
     public abstract class BaseRelicStats {
+        public const string NoStatsAvailableText = "No stats are available for this relic";
         protected static readonly IReadOnlyList<string> DefaultFlashes = new [] { "Flashes" };
         public abstract string TypeName { get; }
         public virtual IReadOnlyList<string> DefaultCounters => DefaultFlashes;
@@ -42,6 +43,13 @@ namespace StatTheRelics.RelicStats {
             }
 
             return sb.ToString().TrimEnd();
+        }
+
+        public static string FormatNoStats(bool historyMode, string bannerNote) {
+            var sb = new StringBuilder();
+            if (historyMode && !string.IsNullOrEmpty(bannerNote)) sb.AppendLine(bannerNote);
+            sb.Append(NoStatsAvailableText);
+            return sb.ToString();
         }
     }
 }

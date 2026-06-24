@@ -106,10 +106,10 @@ namespace StatTheRelics.Patches.Relics {
                 if (card == null || card.Owner != player) return;
 
                 var tracked = RelicTracker.GetText(relic, "Card Enchanted");
-                var cardName = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                var cardName = DeckUtil.GetCardMatchName(card);
                 if (string.IsNullOrWhiteSpace(tracked) || string.IsNullOrWhiteSpace(cardName)) return;
                 if (!tracked.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Any(name => string.Equals(name.Trim(), cardName, StringComparison.OrdinalIgnoreCase))) return;
+                    .Any(name => string.Equals(DeckUtil.NormalizeCardNameForMatching(name), cardName, StringComparison.OrdinalIgnoreCase))) return;
 
                 __state = relic;
             } catch { }
