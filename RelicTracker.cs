@@ -23,6 +23,7 @@ public static class RelicTracker {
     static volatile bool historyMode;
     static int runSessionId;
     static string bannerNote = string.Empty;
+    static string tooltipOverrideNote = string.Empty;
 
     public static RelicData? GetOrCreate(object? relic) {
         var instanceKey = GetInstanceKey(relic);
@@ -171,12 +172,14 @@ public static class RelicTracker {
         runActive = true;
         historyMode = false;
         bannerNote = string.Empty;
+        tooltipOverrideNote = string.Empty;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("new run session");
     }
 
     public static void MarkOutOfRun(string reason = "inactive") {
         runActive = false;
         historyMode = false;
+        tooltipOverrideNote = string.Empty;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("mark out of run");
     }
 
@@ -203,6 +206,8 @@ public static class RelicTracker {
             if (!runActive && !historyMode) return string.Empty;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return string.Empty;
+            if (!string.IsNullOrWhiteSpace(tooltipOverrideNote)) return FormatWithHeader(tooltipOverrideNote);
+
             RelicData? d;
             if (historyMode) {
                 TryGetDataForRelic(historyDataByType, relic, typeKey, out d);
@@ -218,6 +223,13 @@ public static class RelicTracker {
                 : BaseRelicStats.FormatDefault(RelicStatsRegistry.DefaultCounters, counters, historyMode, historyMode ? bannerNote : string.Empty);
 
             var bodyText = (body ?? string.Empty).TrimEnd();
+            return FormatWithHeader(bodyText);
+        } catch { return string.Empty; }
+    }
+
+    static string FormatWithHeader(string bodyText) {
+        try {
+            bodyText = (bodyText ?? string.Empty).TrimEnd();
             var header = ModLog.RelicStatsHeader ?? string.Empty;
             if (string.IsNullOrWhiteSpace(header)) return bodyText;
             if (string.IsNullOrEmpty(bodyText)) return header;
@@ -281,10 +293,12 @@ public static class RelicTracker {
         IDictionary<string, Dictionary<string,int>>? snapshot,
         IDictionary<string, Dictionary<string,string>>? textSnapshot,
         string note,
-        bool historyMode
+        bool historyMode,
+        bool statsUnavailable = false
     ) {
         try {
             bannerNote = historyMode ? (note ?? string.Empty) : string.Empty;
+            tooltipOverrideNote = statsUnavailable ? (note ?? string.Empty) : string.Empty;
             var source = snapshot ?? new Dictionary<string, Dictionary<string,int>>();
             var textSource = textSnapshot ?? new Dictionary<string, Dictionary<string,string>>();
             if (historyMode) {

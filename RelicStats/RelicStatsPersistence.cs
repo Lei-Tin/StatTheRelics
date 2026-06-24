@@ -1,18 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 
 namespace StatTheRelics.RelicStats {
     // Handles saving/loading relic counter snapshots alongside run saves and run history files.
     internal static class RelicStatsPersistence {
         class SnapshotEnvelope {
+            public string ModVersion { get; set; } = string.Empty;
             public Dictionary<string, Dictionary<string, int>> Counters { get; set; } = new();
             public Dictionary<string, Dictionary<string, string>> TextStats { get; set; } = new();
             public string Note { get; set; } = string.Empty;
+            public bool StatsUnavailable { get; set; }
         }
 
         static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = false };
+        static readonly string currentModVersion = GetCurrentModVersion();
 
         static SnapshotEnvelope? pendingRunSnapshot; // staged after load, applied when run initializes
         static SnapshotEnvelope? pendingHistorySnapshot; // staged after history load, shown in UI
@@ -23,7 +27,12 @@ namespace StatTheRelics.RelicStats {
             try {
                 var snapshot = RelicTracker.ExportSnapshot();
                 var textSnapshot = RelicTracker.ExportTextSnapshot();
-                var envelope = new SnapshotEnvelope { Counters = snapshot, TextStats = textSnapshot, Note = "" };
+                var envelope = new SnapshotEnvelope {
+                    ModVersion = currentModVersion,
+                    Counters = snapshot,
+                    TextStats = textSnapshot,
+                    Note = ""
+                };
                 var path = SidecarPath(basePath);
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -50,7 +59,9 @@ namespace StatTheRelics.RelicStats {
             pendingHistorySnapshot = LoadEnvelope(basePath, "history");
             if (pendingHistorySnapshot == null) {
                 pendingHistorySnapshot = new SnapshotEnvelope {
-                    Note = "Stats unavailable for this run"
+                    ModVersion = currentModVersion,
+                    Note = "Stats unavailable for this run",
+                    StatsUnavailable = true
                 };
             }
             ApplySnapshot(pendingHistorySnapshot, historyMode: true);
@@ -77,6 +88,7 @@ namespace StatTheRelics.RelicStats {
                 }
                 if (RelicTracker.IsRunActive && suspendedRunSnapshot == null) {
                     suspendedRunSnapshot = new SnapshotEnvelope {
+                        ModVersion = currentModVersion,
                         Counters = RelicTracker.ExportSnapshot(),
                         TextStats = RelicTracker.ExportTextSnapshot(),
                         Note = string.Empty
@@ -106,7 +118,7 @@ namespace StatTheRelics.RelicStats {
             var counters = env?.Counters ?? new Dictionary<string, Dictionary<string, int>>();
             var textStats = env?.TextStats ?? new Dictionary<string, Dictionary<string, string>>();
             var note = env?.Note ?? string.Empty;
-            RelicTracker.LoadSnapshot(counters, textStats, note, historyMode);
+            RelicTracker.LoadSnapshot(counters, textStats, note, historyMode, env?.StatsUnavailable == true);
         }
 
         static SnapshotEnvelope? LoadEnvelope(string basePath, string label) {
@@ -117,6 +129,8 @@ namespace StatTheRelics.RelicStats {
                 }
                 var json = File.ReadAllText(path);
                 var env = JsonSerializer.Deserialize<SnapshotEnvelope>(json, jsonOptions);
+                if (env == null) return null;
+                if (!IsCompatibleVersion(env.ModVersion)) return VersionMismatchEnvelope(env.ModVersion);
                 return env;
             } catch (Exception ex) {
                 ModLog.Info($"RelicStatsPersistence: failed to load sidecar for {label} - {ex.Message}");
@@ -132,6 +146,43 @@ namespace StatTheRelics.RelicStats {
                     : Path.GetFullPath(basePath);
             } catch { }
             return fullBase + ".relicstats.json";
+        }
+
+        static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {
+            var saved = string.IsNullOrWhiteSpace(savedVersion) ? "unknown" : savedVersion.Trim();
+            return new SnapshotEnvelope {
+                ModVersion = currentModVersion,
+                Counters = new Dictionary<string, Dictionary<string, int>>(),
+                TextStats = new Dictionary<string, Dictionary<string, string>>(),
+                Note = $"StatTheRelics data was saved by mod version {saved}, but the current mod version is {currentModVersion}. No relic stats are available for this save.",
+                StatsUnavailable = true
+            };
+        }
+
+        static bool IsCompatibleVersion(string? savedVersion) {
+            return string.Equals(NormalizeVersion(savedVersion), currentModVersion, StringComparison.Ordinal);
+        }
+
+        static string GetCurrentModVersion() {
+            try {
+                var asm = typeof(RelicStatsPersistence).Assembly;
+                var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                var normalizedInfo = NormalizeVersion(info);
+                if (!string.IsNullOrWhiteSpace(normalizedInfo)) return normalizedInfo;
+
+                var version = asm.GetName().Version;
+                if (version != null) return $"{version.Major}.{version.Minor}.{version.Build}";
+            } catch { }
+
+            return "unknown";
+        }
+
+        static string NormalizeVersion(string? version) {
+            if (string.IsNullOrWhiteSpace(version)) return string.Empty;
+            var value = version.Trim();
+            var metadataIndex = value.IndexOf('+');
+            if (metadataIndex >= 0) value = value[..metadataIndex];
+            return value;
         }
     }
 }

@@ -11,6 +11,7 @@ public class HoverTipSetModelPatch {
     static void Postfix(HoverTip __instance, AbstractModel model) {
         try {
             if (model == null) return;
+            HoverTipRelicCollectionSuppressor.Update(__instance, model);
 
             // If we already left history view (flag cleared) and are back in non-history context (run inactive, not on history stack), restore live snapshot.
             if (!RelicStatsPersistence.HistoryViewActive && !RelicTracker.IsHistoryStack() && !RelicTracker.IsRunActive) {

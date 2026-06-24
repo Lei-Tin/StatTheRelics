@@ -23,6 +23,9 @@
 		<ModsOutputDir>$(STS2GamePath)\mods\$(ModName)</ModsOutputDir>
 		<GameDataDir>$(STS2GamePath)\data_sts2_windows_x86_64</GameDataDir>
 		<GodotProject>$(ProjectDir)godot</GodotProject>
+		<ModImageSource>$(MSBuildProjectDirectory)\StatTheRelics.png</ModImageSource>
+		<ModImageGodotDir>$(GodotProject)\$(ModName)</ModImageGodotDir>
+		<ModImageGodotPath>$(ModImageGodotDir)\mod_image.png</ModImageGodotPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -76,22 +79,30 @@ project/assembly_name="$(ModName)"
 		<PropertyGroup>
 			<ModManifestPath>$(GodotProject)\mod_manifest.json</ModManifestPath>
 			<ModManifestContent>
-				{
-				"id": "$(ModName)",
-				"name": "$(ModDisplayName)",
-				"description": "$(ModDescription)",
-				"author": "$(ModAuthor)",
-				"version": "$(ModVersion)",
-				"has_pck": true,
-				"has_dll": true,
-				"dependencies": [],
-				"affects_gameplay": false
-				}
+{
+"id": "$(ModName)",
+"name": "$(ModDisplayName)",
+"description": "$(ModDescription)",
+"author": "$(ModAuthor)",
+"version": "$(ModVersion)",
+"has_pck": true,
+"has_dll": true,
+"dependencies": [],
+"affects_gameplay": false
+}
 			</ModManifestContent>
 		</PropertyGroup>
 
 		<WriteLinesToFile File="$(ModManifestPath)" Lines="$(ModManifestContent)" Overwrite="true" Encoding="UTF-8" />
 		<Message Text="Generated mod_manifest.json" Importance="high" />
+	</Target>
+
+	<!-- Stage mod image as a Godot resource so it is included in the exported PCK. -->
+	<Target Name="StageModImage" BeforeTargets="BeforeBuild" DependsOnTargets="CreateGodotFolder">
+		<MakeDir Directories="$(ModImageGodotDir)" />
+		<Delete Files="$(GodotProject)\mod_image.png;$(GodotProject)\mod_image.png.import" ContinueOnError="true" />
+		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(ModImageGodotPath)" Condition="Exists('$(ModImageSource)')" />
+		<Message Text="Staged $(ModName)/mod_image.png" Importance="high" Condition="Exists('$(ModImageSource)')" />
 	</Target>
 
 	<Target Name="GenerateExportPresets" BeforeTargets="BeforeBuild" DependsOnTargets="CreateGodotFolder">
@@ -182,6 +193,7 @@ dotnet/embed_build_outputs=false
 		<MakeDir Directories="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(ModsOutputDir)" />
+		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(ModsOutputDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(ModsOutputDir)\$(ModName).pck&quot;" />
 	</Target>
 
@@ -197,6 +209,7 @@ dotnet/embed_build_outputs=false
 
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageModDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(PackageModDir)" />
+		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(PackageModDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(PackageModDir)\$(ModName).pck&quot;" />
 
 		<Delete Files="$(PackageZipPath)" ContinueOnError="true" />
