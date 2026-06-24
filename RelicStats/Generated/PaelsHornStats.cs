@@ -4,6 +4,6 @@ using StatTheRelics.RelicStats;
 namespace StatTheRelics.RelicStats.Generated {
     internal sealed class PaelsHornStats : BaseRelicStats {
         public override string TypeName => "MegaCrit.Sts2.Core.Models.Relics.PaelsHorn";
-        public override IReadOnlyList<string> DefaultCounters => DefaultFlashes;
+        public override IReadOnlyList<string> DefaultCounters => new [] { "Relax Played" };
     }
 }
