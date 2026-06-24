@@ -4,6 +4,6 @@ using StatTheRelics.RelicStats;
 namespace StatTheRelics.RelicStats.Generated {
     internal sealed class NunchakuStats : BaseRelicStats {
         public override string TypeName => "MegaCrit.Sts2.Core.Models.Relics.Nunchaku";
-        public override IReadOnlyList<string> DefaultCounters => DefaultFlashes;
+        public override IReadOnlyList<string> DefaultCounters => new [] { "Energy Gained" };
     }
 }

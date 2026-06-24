@@ -130,6 +130,15 @@ public static class RelicTracker {
         } catch { return null; }
     }
 
+    public static int GetCounterByType(string relicTypeName, string key) {
+        try {
+            if (string.IsNullOrWhiteSpace(relicTypeName)) return 0;
+            if (string.IsNullOrWhiteSpace(key)) return 0;
+            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return 0;
+            return d.Counters.TryGetValue(key, out var value) ? value : 0;
+        } catch { return 0; }
+    }
+
     public static bool HasTrackedRelicType(string relicTypeName) {
         try {
             if (string.IsNullOrWhiteSpace(relicTypeName)) return false;
