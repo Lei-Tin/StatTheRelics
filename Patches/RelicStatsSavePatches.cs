@@ -17,6 +17,7 @@ namespace StatTheRelics.Patches {
             PatchInitializeSavedRun(harmony);
             PatchSaveHistory(harmony);
             PatchLoadHistory(harmony);
+            PatchLoadAllRunHistoryNames(harmony);
         }
 
         static void PatchSaveRun(Harmony harmony) {
@@ -52,6 +53,12 @@ namespace StatTheRelics.Patches {
             var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "LoadHistory", new[] { typeof(string) })
                          ?? throw new MissingMethodException("RunHistorySaveManager.LoadHistory(string) not found");
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadHistory)));
+        }
+
+        static void PatchLoadAllRunHistoryNames(Harmony harmony) {
+            var target = AccessTools.DeclaredMethod(typeof(RunHistorySaveManager), "LoadAllRunHistoryNames", Type.EmptyTypes)
+                         ?? throw new MissingMethodException("RunHistorySaveManager.LoadAllRunHistoryNames() not found");
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicStatsSavePatches), nameof(AfterLoadAllRunHistoryNames)));
         }
 
         static void AfterSaveRun(RunSaveManager __instance) {
@@ -92,6 +99,12 @@ namespace StatTheRelics.Patches {
 
                 var basePath = Path.Combine(historyPath, fileName ?? string.Empty);
                 RelicStatsPersistence.StageHistorySnapshot(basePath, GetField<object>(__instance, "_saveStore"));
+            } catch { }
+        }
+
+        static void AfterLoadAllRunHistoryNames(List<string> __result) {
+            try {
+                __result?.RemoveAll(name => (name ?? string.Empty).EndsWith(".relicstats.json", StringComparison.OrdinalIgnoreCase));
             } catch { }
         }
 

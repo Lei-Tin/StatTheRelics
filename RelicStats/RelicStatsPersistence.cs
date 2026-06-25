@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using MegaCrit.Sts2.Core.Saves;
 
 namespace StatTheRelics.RelicStats {
     // Handles saving/loading relic counter snapshots alongside run saves and run history files.
@@ -31,10 +32,10 @@ namespace StatTheRelics.RelicStats {
                     ModVersion = currentModVersion,
                     Counters = snapshot,
                     TextStats = textSnapshot,
-                    Note = ""
+                    Note = string.Empty
                 };
-                var path = SidecarPath(basePath);
                 var json = JsonSerializer.Serialize(envelope, jsonOptions);
+                var path = SidecarPath(basePath);
 
                 if (TryWriteWithSaveStore(saveStore, path, json)) return;
 
@@ -105,7 +106,7 @@ namespace StatTheRelics.RelicStats {
         // Restore the suspended run snapshot (if any) after leaving history screens.
         public static void RestoreSuspendedRunSnapshotIfAny() {
             try {
-                // Do not override a staged run load
+                // Do not override a staged run load.
                 if (pendingRunSnapshot != null) return;
 
                 if (suspendedRunSnapshot != null) {
@@ -129,19 +130,22 @@ namespace StatTheRelics.RelicStats {
             try {
                 var path = SidecarPath(basePath);
                 string? json = null;
-                if (TryReadWithSaveStore(saveStore, path, out var storeJson)) {
+                var saveStoreType = saveStore?.GetType().FullName ?? "null";
+
+                ModLog.Info($"RelicStatsPersistence: loading {label} sidecar basePath={basePath}, sidecarPath={path}, saveStore={saveStoreType}");
+
+                if (TryReadWithSaveStore(saveStore, path, label, out var storeJson)) {
                     json = storeJson;
                 } else {
                     var physicalPath = PhysicalSidecarPath(basePath);
-                    if (!File.Exists(physicalPath)) {
-                        return null;
-                    }
+                    var physicalExists = File.Exists(physicalPath);
+                    ModLog.Info($"RelicStatsPersistence: physical fallback {label} path={physicalPath}, exists={physicalExists}");
+                    if (!physicalExists) return null;
                     json = File.ReadAllText(physicalPath);
+                    ModLog.Info($"RelicStatsPersistence: physical read {label} path={physicalPath}, length={json.Length}");
                 }
 
-                if (string.IsNullOrWhiteSpace(json)) {
-                    return null;
-                }
+                if (string.IsNullOrWhiteSpace(json)) return null;
 
                 var env = JsonSerializer.Deserialize<SnapshotEnvelope>(json, jsonOptions);
                 if (env == null) return null;
@@ -154,9 +158,11 @@ namespace StatTheRelics.RelicStats {
         }
 
         static string SidecarPath(string basePath) {
-            var dir = GetDirectoryName(basePath);
-            var fileName = GetFileName(basePath);
-            if (string.IsNullOrWhiteSpace(fileName)) return basePath + ".relicstats.json";
+            var normalized = NormalizeStorePath(basePath);
+            var dir = GetDirectoryName(normalized);
+            var fileName = GetFileName(normalized);
+            if (string.IsNullOrWhiteSpace(fileName)) return normalized + ".relicstats.json";
+
             return string.IsNullOrWhiteSpace(dir)
                 ? "relicstats/" + fileName + ".relicstats.json"
                 : dir + "/relicstats/" + fileName + ".relicstats.json";
@@ -164,46 +170,41 @@ namespace StatTheRelics.RelicStats {
 
         static string PhysicalSidecarPath(string basePath) {
             var logicalSidecar = SidecarPath(basePath);
-            var fullBase = logicalSidecar;
             try {
-                fullBase = Path.IsPathRooted(logicalSidecar)
-                    ? logicalSidecar
-                    : Path.GetFullPath(logicalSidecar);
-            } catch { }
-            return fullBase;
+                return Path.IsPathRooted(logicalSidecar) ? logicalSidecar : Path.GetFullPath(logicalSidecar);
+            } catch {
+                return logicalSidecar;
+            }
         }
 
         static bool TryWriteWithSaveStore(object? saveStore, string path, string json) {
-            if (saveStore == null) return false;
+            if (saveStore is not ISaveStore store) return false;
             try {
                 var dir = GetDirectoryName(path);
-                if (!string.IsNullOrWhiteSpace(dir)) {
-                    var createDirectory = saveStore.GetType().GetMethod("CreateDirectory", new[] { typeof(string) });
-                    createDirectory?.Invoke(saveStore, new object[] { dir });
-                }
-
-                var writeFile = saveStore.GetType().GetMethod("WriteFile", new[] { typeof(string), typeof(string) });
-                if (writeFile == null) return false;
-                writeFile.Invoke(saveStore, new object[] { path, json });
+                if (!string.IsNullOrWhiteSpace(dir)) store.CreateDirectory(dir);
+                store.WriteFile(path, json);
                 return true;
             } catch {
                 return false;
             }
         }
 
-        static bool TryReadWithSaveStore(object? saveStore, string path, out string? json) {
+        static bool TryReadWithSaveStore(object? saveStore, string path, string label, out string? json) {
             json = null;
-            if (saveStore == null) return false;
+            if (saveStore is not ISaveStore store) {
+                var saveStoreType = saveStore?.GetType().FullName ?? "null";
+                ModLog.Info($"RelicStatsPersistence: no ISaveStore for {label} sidecar path={path}, saveStore={saveStoreType}");
+                return false;
+            }
             try {
-                var fileExists = saveStore.GetType().GetMethod("FileExists", new[] { typeof(string) });
-                if (fileExists == null) return false;
-                if (fileExists.Invoke(saveStore, new object[] { path }) is not bool exists || !exists) return false;
-
-                var readFile = saveStore.GetType().GetMethod("ReadFile", new[] { typeof(string) });
-                if (readFile == null) return false;
-                json = readFile.Invoke(saveStore, new object[] { path }) as string;
+                var exists = store.FileExists(path);
+                ModLog.Info($"RelicStatsPersistence: ISaveStore FileExists {label} path={path}, exists={exists}, store={store.GetType().FullName}");
+                if (!exists) return false;
+                json = store.ReadFile(path);
+                ModLog.Info($"RelicStatsPersistence: ISaveStore read {label} path={path}, length={json?.Length ?? 0}");
                 return true;
-            } catch {
+            } catch (Exception ex) {
+                ModLog.Info($"RelicStatsPersistence: ISaveStore read failed for {label} path={path} - {ex.GetType().Name}: {ex.Message}");
                 json = null;
                 return false;
             }
@@ -223,6 +224,10 @@ namespace StatTheRelics.RelicStats {
             var backslash = path.LastIndexOf('\\');
             var index = Math.Max(slash, backslash);
             return index >= 0 && index < path.Length - 1 ? path[(index + 1)..] : path;
+        }
+
+        static string NormalizeStorePath(string path) {
+            return (path ?? string.Empty).Replace('\\', '/');
         }
 
         static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {

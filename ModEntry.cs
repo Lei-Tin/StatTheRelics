@@ -12,14 +12,22 @@ public class ModEntry {
         var harmony = new Harmony(HarmonyId);
 
         try {
+            ModLog.Info("ModEntry: initialization started");
+
+            ModLog.Info("ModEntry: applying declared Harmony patches");
             harmony.PatchAll();
 
+            ModLog.Info("ModEntry: applying dynamic relic patches");
             RelicTracker.RelicPatches.ApplyDynamicPatches(harmony);
 
+            ModLog.Info("ModEntry: applying save/history patches");
             RelicStatsSavePatches.Apply(harmony);
 
             // Load stat definitions (one class per relic)
+            ModLog.Info("ModEntry: registering relic stat definitions");
             RelicStatsRegistry.RegisterAllFromAssembly(typeof(ModEntry).Assembly);
+
+            ModLog.Info("ModEntry: initialization complete");
         } catch (Exception ex) {
             ModLog.Info($"ModEntry: initialization failed, rolling back all patches - {ex}");
             TryRollbackAllPatches();
