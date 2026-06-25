@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It patches relic tooltips to append usage data, then persists that data into run saves and run history.
 
-Current version: `1.0.2`
+Current version: `1.0.3`
 
 Steam workshop link: https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122
 
@@ -30,6 +30,25 @@ Dynamic patch hints live in `RelicTracker.RelicPatches` and include method name 
 The mod image source is [StatTheRelics.png](./StatTheRelics.png) at the repository root. Builds stage it into the generated Godot project as `StatTheRelics/mod_image.png`, so STS2 can load `res://StatTheRelics/mod_image.png` from the exported PCK.
 
 ## Build
+
+You need to setup `local.props` on the root directory of this project to be able to build, it should contain the following:
+
+```
+<Project>
+  <PropertyGroup>
+    <!-- Paths -->
+    <STS2GamePath>{Game Path}</STS2GamePath>
+    <GodotExePath>{Godot.exe Path}</GodotExePath>
+    
+    <!-- Mod Metadata -->
+    <ModName>StatTheRelics</ModName>
+    <ModDisplayName>Stat The Relics</ModDisplayName>
+	<ModDescription>Displays stats for the various relics found in the spire</ModDescription>
+    <ModAuthor>LeiT</ModAuthor>
+    <ModVersion>1.0.3</ModVersion>
+  </PropertyGroup>
+</Project>
+```
 
 Use:
 
