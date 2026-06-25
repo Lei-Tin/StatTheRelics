@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It patches relic tooltips to append usage data, then persists that data into run saves and run history.
 
-Current version: `1.0.0`
+Current version: `1.0.2`
 
 Steam workshop link: https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122
 
@@ -37,4 +37,4 @@ Use:
 dotnet build
 ```
 
-The build generates the Godot project metadata, exports the PCK, copies the DLL and manifest to the configured STS2 mod folder, and creates `StatTheRelics_v1.0.0.zip`.
+The build generates the Godot project metadata, exports the PCK, copies the DLL and manifest to the configured STS2 mod folder, and creates `StatTheRelics_v{$version}.zip`.
