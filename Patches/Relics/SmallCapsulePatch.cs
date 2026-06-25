@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Rewards;
 
@@ -12,6 +9,8 @@ namespace StatTheRelics.Patches.Relics {
     [HarmonyPatch(typeof(SmallCapsule), nameof(SmallCapsule.AfterObtained))]
     public static class SmallCapsulePatch {
         static readonly object Sync = new();
+        static readonly object Recorded = new();
+        static readonly ConditionalWeakTable<RelicReward, object> RecordedRewards = new();
         static SmallCapsule? activeRelic;
 
         static void Prefix(SmallCapsule __instance) {
@@ -47,32 +46,29 @@ namespace StatTheRelics.Patches.Relics {
             }
         }
 
-        internal static void SetOfferedRelic(SmallCapsule relic, IEnumerable<Reward> rewards) {
+        internal static void RecordOfferedRelic(RelicReward reward) {
             try {
-                var names = rewards
-                    .OfType<RelicReward>()
-                    .Select(reward => reward.Relic ?? ReflectionUtil.GetMemberValue(reward, "_relic") ?? ReflectionUtil.GetMemberValue(reward, "_predeterminedRelic"))
-                    .Where(relicModel => relicModel != null)
-                    .Select(relicModel => ReflectionUtil.GetModelTitle(relicModel) ?? relicModel!.GetType().Name)
-                    .Where(name => !string.IsNullOrWhiteSpace(name))
-                    .ToList();
+                var relic = ActiveRelic;
+                if (relic == null || reward == null) return;
 
-                if (names.Count > 0) RelicTracker.SetText(relic, "Relic Offered", string.Join("\n", names));
+                lock (Recorded) {
+                    if (RecordedRewards.TryGetValue(reward, out _)) return;
+                    RecordedRewards.Add(reward, Recorded);
+                }
+
+                var offeredRelic = reward.Relic
+                    ?? ReflectionUtil.GetMemberValue(reward, "_relic")
+                    ?? ReflectionUtil.GetMemberValue(reward, "_predeterminedRelic");
+                var name = ReflectionUtil.GetModelTitle(offeredRelic) ?? offeredRelic?.GetType().Name;
+                if (!string.IsNullOrWhiteSpace(name)) RelicTracker.SetText(relic, "Relic Offered", name);
             } catch { }
         }
     }
 
-    [HarmonyPatch(typeof(RewardsCmd), nameof(RewardsCmd.OfferCustom), new Type[] {
-        typeof(Player),
-        typeof(List<Reward>)
-    })]
-    public static class SmallCapsuleOfferCustomPatch {
-        static void Prefix(Player player, List<Reward> rewards) {
-            try {
-                var relic = SmallCapsulePatch.ActiveRelic;
-                if (relic == null || player == null || rewards == null || relic.Owner != player) return;
-                SmallCapsulePatch.SetOfferedRelic(relic, rewards);
-            } catch { }
+    [HarmonyPatch(typeof(RelicReward), nameof(RelicReward.Populate))]
+    public static class SmallCapsuleRelicRewardPopulatePatch {
+        static void Postfix(RelicReward __instance) {
+            SmallCapsulePatch.RecordOfferedRelic(__instance);
         }
     }
 }
