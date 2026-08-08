@@ -23,7 +23,7 @@ Current version: `1.0.5`
 
 1. Subscribe on the [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122) and wait for Steam to finish downloading it.
 2. Launch Slay the Spire 2. If the game asks to load Mods or restart, accept the prompt.
-3. Open the **Modding** screen from the main menu and make sure **Stat The Relics** is enabled. Restart the game if you changed its enabled state.
+3. Open the **Modding** screen from the main menu's settings (general) screen and make sure **Stat The Relics** is there.
 4. Start a new run, then hover a relic to see its counters.
 
 This Mod is standalone and has no third-party Mod dependencies.
@@ -62,7 +62,7 @@ The game keeps modded and unmodded saves separately. Switching back to an unmodd
 
 If no counters appear:
 
-1. Confirm **Stat The Relics** is listed and enabled in the main-menu **Modding** screen, then restart the game.
+1. Confirm **Stat The Relics** is listed in the main menu's settings -> **Modding** screen, then restart the game.
 2. Confirm Steam finished downloading the Workshop item and that no second manual copy is installed.
 3. Test during an active run by hovering an owned relic; the Relic Collection screen intentionally shows no run counters.
 4. If a tooltip has an archived-stats header, its values came from an older Mod or game version and are shown without applying the current relic implementation.
