@@ -65,7 +65,7 @@ namespace StatTheRelics.RelicStats {
             if (pendingHistorySnapshot == null) {
                 pendingHistorySnapshot = new SnapshotEnvelope {
                     ModVersion = currentModVersion,
-                    Note = Localization.Get("Stats unavailable for this run"),
+                    Note = "Stats unavailable for this run",
                     StatsUnavailable = true
                 };
             }
@@ -231,16 +231,12 @@ namespace StatTheRelics.RelicStats {
         }
 
         static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {
-            var saved = string.IsNullOrWhiteSpace(savedVersion) ? Localization.Get("Unknown") : savedVersion.Trim();
+            var saved = string.IsNullOrWhiteSpace(savedVersion) ? "Unknown" : savedVersion.Trim();
             return new SnapshotEnvelope {
                 ModVersion = currentModVersion,
                 Counters = new Dictionary<string, Dictionary<string, int>>(),
                 TextStats = new Dictionary<string, Dictionary<string, string>>(),
-                Note = Localization.Format(
-                    "StatTheRelics data was saved by mod version {0}, but the current mod version is {1}. No relic stats are available for this save.",
-                    saved,
-                    currentModVersion
-                ),
+                Note = $"StatTheRelics data was saved by mod version {saved}, but the current mod version is {currentModVersion}. No relic stats are available for this save.",
                 StatsUnavailable = true
             };
         }

@@ -23,9 +23,9 @@ Relic Collection and other compendium-style views intentionally do not show run-
 
 ## Translation
 
-All text added to relic tooltips is configured in [localization.json](./localization.json). The checked-in file is the English fallback, so every English key initially maps to the same English value.
+All text added to relic tooltips is stored under [localization](./localization). The mod reads `LocManager.Instance.Language` and loads the JSON file whose name matches the game's current language code. The checked-in [eng.json](./localization/eng.json) is the English fallback, so every English key initially maps to the same English value.
 
-To translate the mod, change only the values and leave the English keys unchanged. For example:
+To add a translation, copy `eng.json` to a new file named after the game's language code, then change only the values and leave the English keys unchanged. For example, Simplified Chinese uses `localization/zhs.json`:
 
 ```json
 {
@@ -34,7 +34,9 @@ To translate the mod, change only the values and leave the English keys unchange
 }
 ```
 
-Keep the `{0}` and `{1}` placeholders in the version-mismatch message. Missing or blank entries fall back to English, and a missing or invalid file leaves the mod usable in English. Builds copy `localization.json` next to the mod DLL and include it in the release zip; translators can replace that file without rebuilding the mod.
+Keep the `{0}` and `{1}` placeholders in the version-mismatch message. Missing or blank entries fall back to the built-in English text. If the selected language file is missing or invalid, the mod loads `eng.json`; if that is also unavailable, it still remains usable in English.
+
+The active language code is checked whenever a relic tooltip is formatted. Changing the language in the game settings therefore switches the mod translation immediately, without restarting the game. Builds copy the complete `localization` directory next to the mod DLL and include it in the release zip, so translators can add or replace language files without rebuilding the mod.
 
 ## Development
 
