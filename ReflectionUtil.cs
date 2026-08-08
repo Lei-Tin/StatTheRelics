@@ -93,6 +93,26 @@ namespace StatTheRelics {
             return null;
         }
 
+        public static object? FindRelicByTypeName(object? ownerOrCreature, string relicTypeName) {
+            try {
+                if (string.IsNullOrWhiteSpace(relicTypeName)) return null;
+
+                var relics = GetMemberValue(ownerOrCreature, "Relics");
+                if (relics == null) {
+                    var owner = GetMemberValue(ownerOrCreature, "Owner")
+                        ?? GetMemberValue(ownerOrCreature, "Player");
+                    relics = GetMemberValue(owner, "Relics");
+                }
+
+                if (relics is not IEnumerable enumerable) return null;
+                foreach (var relic in enumerable) {
+                    if (relic?.GetType().FullName == relicTypeName) return relic;
+                }
+            } catch { }
+
+            return null;
+        }
+
         public static string? GetModelTitle(object? model) {
             try {
                 if (model == null) return null;

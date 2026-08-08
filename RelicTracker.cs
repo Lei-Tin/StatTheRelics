@@ -24,6 +24,7 @@ public static class RelicTracker {
     static int runSessionId;
     static string bannerNote = string.Empty;
     static string tooltipOverrideNote = string.Empty;
+    static volatile bool rawDisplayMode;
 
     public static RelicData? GetOrCreate(object? relic) {
         var instanceKey = GetInstanceKey(relic);
@@ -173,13 +174,16 @@ public static class RelicTracker {
         historyMode = false;
         bannerNote = string.Empty;
         tooltipOverrideNote = string.Empty;
+        rawDisplayMode = false;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("new run session");
     }
 
     public static void MarkOutOfRun(string reason = "inactive") {
         runActive = false;
         historyMode = false;
+        bannerNote = string.Empty;
         tooltipOverrideNote = string.Empty;
+        rawDisplayMode = false;
         RelicStatsPersistence.ClearSuspendedRunSnapshot("mark out of run");
     }
 
@@ -218,6 +222,13 @@ public static class RelicTracker {
             var def = RelicStatsRegistry.GetDefinition(typeKey);
             var counters = d?.Counters ?? new ConcurrentDictionary<string, int>();
             var textStats = d?.TextStats ?? new ConcurrentDictionary<string, string>();
+            if (rawDisplayMode) return FormatWithHeader(FormatRawStoredData(counters, textStats, bannerNote));
+
+            if (RelicStatsRegistry.IsImplementationChanged(typeKey)) {
+                var fallbackBody = FormatImplementationChanged(counters, historyMode, historyMode ? bannerNote : string.Empty);
+                return FormatWithHeader(fallbackBody);
+            }
+
             var body = def != null
                 ? def.Format(counters, textStats, historyMode, historyMode ? bannerNote : string.Empty)
                 : BaseRelicStats.FormatDefault(RelicStatsRegistry.DefaultCounters, counters, historyMode, historyMode ? bannerNote : string.Empty);
@@ -225,6 +236,44 @@ public static class RelicTracker {
             var bodyText = (body ?? string.Empty).TrimEnd();
             return FormatWithHeader(bodyText);
         } catch { return string.Empty; }
+    }
+
+    static string FormatRawStoredData(
+        IReadOnlyDictionary<string, int> counters,
+        IReadOnlyDictionary<string, string> textStats,
+        string note
+    ) {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(note)) sb.AppendLine(note.TrimEnd());
+
+        if (counters.Count > 0) {
+            sb.AppendLine("Counters:");
+            foreach (var kv in counters.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)) {
+                sb.AppendLine($"{kv.Key}: {kv.Value}");
+            }
+        }
+
+        if (textStats.Count > 0) {
+            sb.AppendLine("Text stats:");
+            foreach (var kv in textStats.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)) {
+                sb.AppendLine($"{kv.Key}: {kv.Value}");
+            }
+        }
+
+        if (counters.Count == 0 && textStats.Count == 0) sb.Append("No stored values for this relic");
+        return sb.ToString().TrimEnd();
+    }
+
+    static string FormatImplementationChanged(
+        IReadOnlyDictionary<string, int> counters,
+        bool historyMode,
+        string note
+    ) {
+        var sb = new StringBuilder();
+        if (historyMode && !string.IsNullOrWhiteSpace(note)) sb.AppendLine(note.TrimEnd());
+        sb.AppendLine("Relic implementation changed");
+        sb.Append($"Flashes: {(counters.TryGetValue("Flashes", out var flashes) ? flashes : 0)}");
+        return sb.ToString();
     }
 
     static string FormatWithHeader(string bodyText) {
@@ -294,11 +343,13 @@ public static class RelicTracker {
         IDictionary<string, Dictionary<string,string>>? textSnapshot,
         string note,
         bool historyMode,
-        bool statsUnavailable = false
+        bool statsUnavailable = false,
+        bool rawDisplay = false
     ) {
         try {
-            bannerNote = historyMode ? (note ?? string.Empty) : string.Empty;
+            bannerNote = historyMode || rawDisplay ? (note ?? string.Empty) : string.Empty;
             tooltipOverrideNote = statsUnavailable ? (note ?? string.Empty) : string.Empty;
+            rawDisplayMode = rawDisplay;
             var source = snapshot ?? new Dictionary<string, Dictionary<string,int>>();
             var textSource = textSnapshot ?? new Dictionary<string, Dictionary<string,string>>();
             if (historyMode) {
@@ -341,6 +392,10 @@ public static class RelicTracker {
         } catch { }
     }
 
+    internal static string CurrentBannerNote => bannerNote;
+    internal static bool CurrentStatsUnavailable => !string.IsNullOrWhiteSpace(tooltipOverrideNote);
+    internal static bool RawDisplayMode => rawDisplayMode;
+
     public static class RelicPatches {
         public static void ApplyDynamicPatches(Harmony harmony) {
             try {
@@ -373,7 +428,7 @@ public static class RelicTracker {
                 var tk = GetTypeKey(__instance);
                 if (tk == null) return;
                 var def = RelicStatsRegistry.GetDefinition(tk);
-                if (def != null) {
+                if (!RelicStatsRegistry.IsImplementationChanged(tk) && def != null) {
                     var hasFlash = def.DefaultCounters?.Any(c => string.Equals(c, "Flashes", StringComparison.OrdinalIgnoreCase)) == true;
                     if (!hasFlash) return;
                 }

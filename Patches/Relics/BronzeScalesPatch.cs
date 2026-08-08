@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -12,15 +14,16 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace StatTheRelics.Patches.Relics {
     // Count the damage dealt by Bronze Scales' initial 3 Thorns.
-    [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage), new Type[] {
-        typeof(PlayerChoiceContext),
-        typeof(Creature),
-        typeof(decimal),
-        typeof(ValueProp),
-        typeof(Creature),
-        typeof(CardModel)
-    })]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay))]
     public static class BronzeScalesPatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(CreatureCmd),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay)),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))
+        );
+
         class BronzeScalesState {
             public BronzeScales? Relic { get; set; }
             public int Cap { get; set; }

@@ -1,72 +1,128 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(DiamondDiadem), nameof(DiamondDiadem.BeforeSideTurnEnd))]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(DiamondDiadem), "AfterSideTurnStart")]
+    [PatchTargetAlternative(typeof(DiamondDiadem), "BeforeSideTurnEnd")]
     public static class DiamondDiademPatch {
-        static void Prefix(DiamondDiadem __instance, PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants, ref bool __state) {
+        sealed class State {
+            public bool UsesBlockEffect { get; set; }
+            public int BlockBefore { get; set; }
+        }
+
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(DiamondDiadem),
+            new PatchTargetCandidate("AfterSideTurnStart"),
+            new PatchTargetCandidate("BeforeSideTurnEnd")
+        );
+
+        static void Prefix(DiamondDiadem __instance, MethodBase __originalMethod, object[] __args, ref object __state) {
             try {
-                if (__instance == null || participants == null) return;
-                var ownerCreature = __instance.Owner?.Creature;
-                if (ownerCreature == null || !participants.Contains(ownerCreature)) return;
-                var threshold = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "CardThreshold", 2));
-                if (__instance.CardsPlayedThisTurn > threshold) return;
-                __state = true;
+                var owner = __instance?.Owner;
+                var ownerCreature = owner?.Creature;
+                if (ownerCreature == null || !IncludesOwner(__args, ownerCreature)) return;
+
+                var usesBlockEffect = __originalMethod.Name == "AfterSideTurnStart";
+                if (usesBlockEffect) {
+                    if (owner?.PlayerCombatState?.TurnNumber > 1) return;
+                } else {
+                    var threshold = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "CardThreshold", 2));
+                    var cardsPlayed = ReflectionUtil.GetIntMemberValue(__instance, "CardsPlayedThisTurn", int.MaxValue);
+                    if (cardsPlayed > threshold) return;
+                }
+
+                __state = new State {
+                    UsesBlockEffect = usesBlockEffect,
+                    BlockBefore = GetBlock(ownerCreature)
+                };
             } catch { }
         }
 
-        static void Postfix(DiamondDiadem __instance, Task __result, bool __state) {
+        static void Postfix(DiamondDiadem __instance, Task __result, object __state) {
             try {
-                if (!__state) return;
-
+                if (__state is not State state) return;
                 if (__result == null) {
-                    RelicTracker.AddAmount(__instance, "Times Triggered", 1);
+                    Count(__instance, state);
                     return;
                 }
 
                 __result.ContinueWith(task => {
                     try {
-                        if (task.Status == TaskStatus.RanToCompletion) {
-                            RelicTracker.AddAmount(__instance, "Times Triggered", 1);
-                        }
+                        if (task.Status == TaskStatus.RanToCompletion) Count(__instance, state);
                     } catch { }
                 });
             } catch { }
         }
+
+        static void Count(DiamondDiadem relic, State state) {
+            RelicTracker.AddAmount(relic, "Times Triggered", 1);
+            if (!state.UsesBlockEffect) return;
+
+            var gained = Math.Max(0, GetBlock(relic.Owner?.Creature) - state.BlockBefore);
+            if (gained > 0) RelicTracker.AddAmount(relic, "Block Gained", gained);
+        }
+
+        static bool IncludesOwner(object[] arguments, Creature owner) {
+            foreach (var argument in arguments) {
+                if (argument is IEnumerable<Creature> participants) {
+                    foreach (var participant in participants) {
+                        if (ReferenceEquals(participant, owner)) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        static int GetBlock(object? creature) {
+            try {
+                var block = ReflectionUtil.GetMemberValue(creature, "Block")
+                    ?? ReflectionUtil.GetMemberValue(creature, "CurrentBlock");
+                return block == null ? 0 : Math.Max(0, Convert.ToInt32(block));
+            } catch {
+                return 0;
+            }
+        }
     }
 
-    [HarmonyPatch(typeof(DiamondDiademPower), nameof(DiamondDiademPower.ModifyDamageMultiplicative))]
+    [HarmonyPatch]
+    [VersionOptionalPatch]
     public static class DiamondDiademPowerPatch {
-        static void Postfix(DiamondDiademPower __instance, Creature target, decimal amount, ValueProp props, Creature dealer, CardModel cardSource, decimal __result) {
+        static Type? PowerType => AccessTools.TypeByName("MegaCrit.Sts2.Core.Models.Powers.DiamondDiademPower");
+
+        static bool Prepare() => PowerType != null;
+
+        static MethodBase TargetMethod() {
+            var type = PowerType ?? throw new TypeLoadException("DiamondDiademPower was expected for the legacy Diamond Diadem implementation.");
+            return AccessTools.DeclaredMethod(type, "ModifyDamageMultiplicative")
+                ?? throw new MissingMethodException(type.FullName, "ModifyDamageMultiplicative");
+        }
+
+        static void Postfix(object __instance, Creature target, decimal amount, decimal __result) {
             try {
-                if (__instance == null || target == null) return;
-                if (__result >= 1m) return;
-                if (target != __instance.Owner) return;
+                if (__instance == null || target == null || __result >= 1m) return;
+                if (!ReferenceEquals(target, ReflectionUtil.GetMemberValue(__instance, "Owner"))) return;
                 if (!IsFromCreatureDamageCommand()) return;
 
                 var relic = ReflectionUtil.FindRelic<DiamondDiadem>(target);
                 if (relic == null) return;
 
-                var block = GetBlock(target);
+                var currentBlock = GetBlock(target);
                 var incomingDamage = Math.Max(0, DecimalToInt(amount));
                 var reducedDamage = Math.Max(0, DecimalToInt(amount * __result));
-                var hpDamageBeforeDiadem = Math.Max(0, incomingDamage - block);
-                var hpDamageAfterDiadem = Math.Max(0, reducedDamage - block);
-                var prevented = Math.Max(0, hpDamageBeforeDiadem - hpDamageAfterDiadem);
-                if (prevented <= 0) return;
-
-                RelicTracker.AddAmount(relic, "Damage Prevented", prevented);
+                var prevented = Math.Max(0,
+                    Math.Max(0, incomingDamage - currentBlock) - Math.Max(0, reducedDamage - currentBlock));
+                if (prevented > 0) RelicTracker.AddAmount(relic, "Damage Prevented", prevented);
             } catch { }
         }
 
@@ -94,10 +150,9 @@ namespace StatTheRelics.Patches.Relics {
                 if (frames == null) return false;
                 foreach (var frame in frames) {
                     var typeName = frame.GetMethod()?.DeclaringType?.FullName;
-                    if (typeName != null && typeName.Contains("MegaCrit.Sts2.Core.Commands.CreatureCmd", StringComparison.Ordinal)) return true;
+                    if (typeName?.Contains("MegaCrit.Sts2.Core.Commands.CreatureCmd", StringComparison.Ordinal) == true) return true;
                 }
             } catch { }
-
             return false;
         }
     }

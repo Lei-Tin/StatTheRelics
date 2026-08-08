@@ -43,6 +43,7 @@ namespace StatTheRelics.Patches.Relics {
 
                 var current = RelicTracker.GetText(relic, "Relics Given");
                 var value = string.Join("\n", added);
+                RelicTracker.AddAmount(relic, "Relics Given", added.Count);
                 RelicTracker.SetText(relic, "Relics Given", string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
             } catch { }
         }

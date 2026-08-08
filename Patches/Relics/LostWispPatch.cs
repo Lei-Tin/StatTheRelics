@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
@@ -35,15 +36,16 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage), new Type[] {
-        typeof(PlayerChoiceContext),
-        typeof(IEnumerable<Creature>),
-        typeof(decimal),
-        typeof(ValueProp),
-        typeof(Creature),
-        typeof(CardModel)
-    })]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay))]
     public static class LostWispDamagePatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(CreatureCmd),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay)),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))
+        );
+
         class DamageState {
             public LostWisp? Relic { get; set; }
         }

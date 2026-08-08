@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It patches relic tooltips to append usage data, then persists that data into run saves and run history.
 
-Current version: `1.0.3`
+Current version: `1.0.4`
 
 Steam workshop link: https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122
 
@@ -13,7 +13,8 @@ Steam workshop link: https://steamcommunity.com/sharedfiles/filedetails/?id=3750
 - Tracks per-relic counters, with relic-specific metrics for effects that are more interesting than simple flash counts.
 - Appends formatted stats directly to relic tooltips during a run.
 - Restores saved stats when viewing run history.
-- Stores sidecar data with the current mod version, and hides stale stats when sidecar data was written by an incompatible version.
+- Stores the mod version and game build in each sidecar snapshot.
+- Keeps older snapshots readable after a mod or game update by showing their stored JSON values under an archived-stats header.
 
 ## Usage
 
@@ -25,7 +26,7 @@ Relic Collection and other compendium-style views intentionally do not show run-
 
 Add or tweak relic-specific formatting by editing a `BaseRelicStats` subclass under [RelicStats/Generated](./RelicStats/Generated) or [RelicStats](./RelicStats).
 
-Dynamic patch hints live in `RelicTracker.RelicPatches` and include method name heuristics for obtains (`OnObtain`, `OnEquip`, constructors), effects (`Activate`, `OnUse`, setters), flashes, and tooltip builders.
+Relic-specific behavior lives in one Harmony patch group per relic. Shared lifecycle hooks initialize zero-value counters when relics are obtained and provide the generic `Flashes` fallback for unknown or changed relic implementations.
 
 The mod image source is [StatTheRelics.png](./StatTheRelics.png) at the repository root. Builds stage it into the generated Godot project as `StatTheRelics/mod_image.png`, so STS2 can load `res://StatTheRelics/mod_image.png` from the exported PCK.
 
@@ -45,7 +46,8 @@ You need to setup `local.props` on the root directory of this project to be able
     <ModDisplayName>Stat The Relics</ModDisplayName>
 	<ModDescription>Displays stats for the various relics found in the spire</ModDescription>
     <ModAuthor>LeiT</ModAuthor>
-    <ModVersion>1.0.3</ModVersion>
+    <ModVersion>1.0.4</ModVersion>
+    <MinGameVersion>0.107.1</MinGameVersion>
   </PropertyGroup>
 </Project>
 ```
@@ -57,3 +59,7 @@ dotnet build
 ```
 
 The build generates the Godot project metadata, exports the PCK, copies the DLL and manifest to the configured STS2 mod folder, and creates `StatTheRelics_v{$version}.zip`.
+
+## Game Update Checks
+
+`tools/InspectRelics.csproj` validates Harmony targets and checks that every game relic has a generated stats definition. The versioned files under [Compatibility](./Compatibility) also fingerprint normalized relic IL, including async state machines, so implementation changes can be reviewed even when method signatures stay the same.

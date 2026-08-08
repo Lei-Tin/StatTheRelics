@@ -11,6 +11,8 @@ public static class RunStartPatch {
         try {
             if (RelicTracker.IsHistoryStack()) return;
             RelicTracker.StartNewRunSession("CreateForNewRun");
+            if (__result?.Relics == null) return;
+            foreach (var relic in __result.Relics) RelicTracker.GetOrCreate(relic);
         } catch { }
     }
 }

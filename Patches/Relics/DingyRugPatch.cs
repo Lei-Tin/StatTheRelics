@@ -54,7 +54,9 @@ namespace StatTheRelics.Patches.Relics {
                 if (options == null) return false;
                 if (options.Flags.HasFlag((CardCreationFlags)16)) return false;
                 if (!options.Flags.HasFlag((CardCreationFlags)128)) return false;
-                if (options.CustomCardPool != null) return false;
+                // Stable exposed a single CustomCardPool; beta replaced it with CardPools.
+                // A non-null legacy value still identifies rewards Dingy Rug should not modify.
+                if (ReflectionUtil.GetMemberValue(options, "CustomCardPool") != null) return false;
                 return true;
             } catch {
                 return true;

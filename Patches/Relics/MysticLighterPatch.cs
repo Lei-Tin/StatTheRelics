@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -46,15 +48,16 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage), new Type[] {
-        typeof(PlayerChoiceContext),
-        typeof(IEnumerable<Creature>),
-        typeof(decimal),
-        typeof(ValueProp),
-        typeof(Creature),
-        typeof(CardModel)
-    })]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay))]
     public static class MysticLighterManyDecimalDamagePatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(CreatureCmd),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay)),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))
+        );
+
         static void Postfix(ValueProp props, CardModel cardSource, Task<IEnumerable<DamageResult>> __result) {
             var bonus = MysticLighterPatch.GetBonus(cardSource, props);
             MysticLighterPatch.CountResults(MysticLighterPatch.GetRelic(cardSource), bonus, __result);

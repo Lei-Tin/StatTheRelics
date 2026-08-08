@@ -10,29 +10,39 @@ namespace StatTheRelics.RelicStats {
     internal static class RelicStatsPersistence {
         class SnapshotEnvelope {
             public string ModVersion { get; set; } = string.Empty;
+            public string GameVersion { get; set; } = string.Empty;
+            public string GameBuild { get; set; } = string.Empty;
             public Dictionary<string, Dictionary<string, int>> Counters { get; set; } = new();
             public Dictionary<string, Dictionary<string, string>> TextStats { get; set; } = new();
             public string Note { get; set; } = string.Empty;
             public bool StatsUnavailable { get; set; }
+            public bool RawDisplay { get; set; }
         }
 
         static readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = false };
         static readonly string currentModVersion = GetCurrentModVersion();
+        static readonly string currentGameVersion = GetCurrentGameVersion();
+        static readonly string currentGameBuild = GetCurrentGameBuild();
 
         static SnapshotEnvelope? pendingRunSnapshot; // staged after load, applied when run initializes
         static SnapshotEnvelope? pendingHistorySnapshot; // staged after history load, shown in UI
         static SnapshotEnvelope? suspendedRunSnapshot; // active run snapshot saved while viewing history
+        static SnapshotEnvelope? activeRunMetadata; // preserves the provenance of an archived current-run snapshot
         static volatile bool historyViewActive;
 
         public static void SaveSnapshot(string basePath, object? saveStore = null) {
             try {
                 var snapshot = RelicTracker.ExportSnapshot();
                 var textSnapshot = RelicTracker.ExportTextSnapshot();
+                var archived = activeRunMetadata;
                 var envelope = new SnapshotEnvelope {
-                    ModVersion = currentModVersion,
+                    ModVersion = archived?.ModVersion ?? currentModVersion,
+                    GameVersion = archived?.GameVersion ?? currentGameVersion,
+                    GameBuild = archived?.GameBuild ?? currentGameBuild,
                     Counters = snapshot,
                     TextStats = textSnapshot,
-                    Note = string.Empty
+                    Note = archived?.Note ?? string.Empty,
+                    RawDisplay = archived?.RawDisplay == true
                 };
                 var json = JsonSerializer.Serialize(envelope, jsonOptions);
                 var path = SidecarPath(basePath);
@@ -77,6 +87,7 @@ namespace StatTheRelics.RelicStats {
             if (suspendedRunSnapshot != null) {
                 suspendedRunSnapshot = null;
             }
+            activeRunMetadata = null;
             historyViewActive = false;
         }
 
@@ -93,10 +104,14 @@ namespace StatTheRelics.RelicStats {
                 }
                 if (RelicTracker.IsRunActive && suspendedRunSnapshot == null) {
                     suspendedRunSnapshot = new SnapshotEnvelope {
-                        ModVersion = currentModVersion,
+                        ModVersion = activeRunMetadata?.ModVersion ?? currentModVersion,
+                        GameVersion = activeRunMetadata?.GameVersion ?? currentGameVersion,
+                        GameBuild = activeRunMetadata?.GameBuild ?? currentGameBuild,
                         Counters = RelicTracker.ExportSnapshot(),
                         TextStats = RelicTracker.ExportTextSnapshot(),
-                        Note = string.Empty
+                        Note = RelicTracker.CurrentBannerNote,
+                        StatsUnavailable = RelicTracker.CurrentStatsUnavailable,
+                        RawDisplay = RelicTracker.RawDisplayMode
                     };
                 }
                 historyViewActive = true;
@@ -123,7 +138,15 @@ namespace StatTheRelics.RelicStats {
             var counters = env?.Counters ?? new Dictionary<string, Dictionary<string, int>>();
             var textStats = env?.TextStats ?? new Dictionary<string, Dictionary<string, string>>();
             var note = env?.Note ?? string.Empty;
-            RelicTracker.LoadSnapshot(counters, textStats, note, historyMode, env?.StatsUnavailable == true);
+            RelicTracker.LoadSnapshot(
+                counters,
+                textStats,
+                note,
+                historyMode,
+                env?.StatsUnavailable == true,
+                env?.RawDisplay == true
+            );
+            if (!historyMode) activeRunMetadata = env?.RawDisplay == true ? env : null;
         }
 
         static SnapshotEnvelope? LoadEnvelope(string basePath, string label, object? saveStore = null) {
@@ -149,7 +172,7 @@ namespace StatTheRelics.RelicStats {
 
                 var env = JsonSerializer.Deserialize<SnapshotEnvelope>(json, jsonOptions);
                 if (env == null) return null;
-                if (!IsCompatibleVersion(env.ModVersion)) return VersionMismatchEnvelope(env.ModVersion);
+                if (!IsCompatibleVersion(env)) MarkAsArchivedSnapshot(env);
                 return env;
             } catch (Exception ex) {
                 ModLog.Info($"RelicStatsPersistence: failed to load sidecar for {label} - {ex.Message}");
@@ -230,19 +253,31 @@ namespace StatTheRelics.RelicStats {
             return (path ?? string.Empty).Replace('\\', '/');
         }
 
-        static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {
-            var saved = string.IsNullOrWhiteSpace(savedVersion) ? "unknown" : savedVersion.Trim();
-            return new SnapshotEnvelope {
-                ModVersion = currentModVersion,
-                Counters = new Dictionary<string, Dictionary<string, int>>(),
-                TextStats = new Dictionary<string, Dictionary<string, string>>(),
-                Note = $"StatTheRelics data was saved by mod version {saved}, but the current mod version is {currentModVersion}. No relic stats are available for this save.",
-                StatsUnavailable = true
-            };
+        static void MarkAsArchivedSnapshot(SnapshotEnvelope env) {
+            var savedMod = DisplayVersion(env.ModVersion);
+            var savedGame = DisplayVersion(env.GameVersion);
+            env.Note = $"Archived stats (mod {savedMod}, game {savedGame}; current mod {currentModVersion}, game {currentGameVersion})\nValues below are shown exactly as saved.";
+            env.StatsUnavailable = false;
+            env.RawDisplay = true;
         }
 
-        static bool IsCompatibleVersion(string? savedVersion) {
-            return string.Equals(NormalizeVersion(savedVersion), currentModVersion, StringComparison.Ordinal);
+        static bool IsCompatibleVersion(SnapshotEnvelope env) {
+            var sameMod = string.Equals(NormalizeVersion(env.ModVersion), currentModVersion, StringComparison.Ordinal);
+            var sameGame = IsKnownVersion(env.GameBuild) && IsKnownVersion(currentGameBuild)
+                ? string.Equals(env.GameBuild, currentGameBuild, StringComparison.OrdinalIgnoreCase)
+                : IsKnownVersion(env.GameVersion) && IsKnownVersion(currentGameVersion)
+                    && string.Equals(NormalizeVersion(env.GameVersion), currentGameVersion, StringComparison.Ordinal);
+            return sameMod && sameGame;
+        }
+
+        static bool IsKnownVersion(string? value) {
+            return !string.IsNullOrWhiteSpace(value)
+                && !string.Equals(value.Trim(), "unknown", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static string DisplayVersion(string? version) {
+            var normalized = NormalizeVersion(version);
+            return string.IsNullOrWhiteSpace(normalized) ? "unknown" : normalized;
         }
 
         static string GetCurrentModVersion() {
@@ -265,6 +300,26 @@ namespace StatTheRelics.RelicStats {
             var metadataIndex = value.IndexOf('+');
             if (metadataIndex >= 0) value = value[..metadataIndex];
             return value;
+        }
+
+        static string GetCurrentGameVersion() {
+            try {
+                var modManager = Type.GetType("MegaCrit.Sts2.Core.Modding.ModManager, sts2", throwOnError: false);
+                var field = modManager?.GetField("_gameVersion", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                var value = field?.GetValue(null)?.ToString();
+                var normalized = NormalizeVersion(value);
+                if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
+            } catch { }
+
+            return "unknown";
+        }
+
+        static string GetCurrentGameBuild() {
+            try {
+                return typeof(MegaCrit.Sts2.Core.Models.RelicModel).Assembly.ManifestModule.ModuleVersionId.ToString("D");
+            } catch {
+                return "unknown";
+            }
         }
     }
 }

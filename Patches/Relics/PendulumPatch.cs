@@ -1,21 +1,31 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(Pendulum), nameof(Pendulum.AfterPlayerTurnStart))]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(Pendulum), "BeforeHandDraw")]
+    [PatchTargetAlternative(typeof(Pendulum), "AfterPlayerTurnStart")]
     public static class PendulumPatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(Pendulum),
+            new PatchTargetCandidate("BeforeHandDraw"),
+            new PatchTargetCandidate("AfterPlayerTurnStart")
+        );
+
         class State {
             public bool WillTrigger { get; set; }
             public int Cards { get; set; }
         }
 
-        static void Prefix(Pendulum __instance, PlayerChoiceContext choiceContext, Player player, ref object __state) {
+        static void Prefix(Pendulum __instance, object[] __args, ref object __state) {
             try {
-                _ = choiceContext;
+                var player = Array.Find(__args, argument => argument is Player) as Player;
                 if (__instance == null || player == null || __instance.Owner != player) return;
                 var turns = Math.Max(1, ReflectionUtil.GetDynamicVarIntValue(__instance, "Turns", 3));
                 var turnsSeen = ReflectionUtil.GetIntMemberValue(__instance, "TurnsSeen", 0);

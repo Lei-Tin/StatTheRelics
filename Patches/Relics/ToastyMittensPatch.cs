@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
@@ -8,37 +9,46 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(ToastyMittens), nameof(ToastyMittens.BeforeHandDraw))]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(ToastyMittens), "AfterPlayerTurnStart")]
+    [PatchTargetAlternative(typeof(ToastyMittens), "BeforeHandDraw")]
     public static class ToastyMittensPatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(ToastyMittens),
+            new PatchTargetCandidate("AfterPlayerTurnStart"),
+            new PatchTargetCandidate("BeforeHandDraw")
+        );
+
         class State {
             public int ExhaustBefore { get; set; }
             public int Strength { get; set; }
+            public Player? Player { get; set; }
         }
 
-        static void Prefix(ToastyMittens __instance, Player player, PlayerChoiceContext choiceContext, ICombatState combatState, ref object __state) {
+        static void Prefix(ToastyMittens __instance, object[] __args, ref object __state) {
             try {
-                _ = choiceContext;
-                _ = combatState;
+                var player = Array.Find(__args, argument => argument is Player) as Player;
                 if (__instance == null || player == null || __instance.Owner?.Creature?.Player != player) return;
                 __state = new State {
                     ExhaustBefore = PileType.Exhaust.GetPile(player)?.Cards?.Count ?? 0,
-                    Strength = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "Strength", 1))
+                    Strength = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "Strength", 1)),
+                    Player = player
                 };
             } catch { }
         }
 
-        static void Postfix(ToastyMittens __instance, Player player, Task __result, object __state) {
+        static void Postfix(ToastyMittens __instance, Task __result, object __state) {
             try {
-                if (__state is not State state) return;
+                if (__state is not State state || state.Player == null) return;
 
                 if (__result == null) {
-                    Count(__instance, player, state);
+                    Count(__instance, state.Player, state);
                     return;
                 }
 
                 __result.ContinueWith(task => {
                     try {
-                        if (task.Status == TaskStatus.RanToCompletion) Count(__instance, player, state);
+                        if (task.Status == TaskStatus.RanToCompletion) Count(__instance, state.Player, state);
                     } catch { }
                 });
             } catch { }

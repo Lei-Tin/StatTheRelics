@@ -1,14 +1,28 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
     // Count how many cards Bone Tea upgrades when it is consumed.
-    [HarmonyPatch(typeof(BoneTea), nameof(BoneTea.AfterSideTurnStart))]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(BoneTea), "AfterPlayerTurnStart")]
+    [PatchTargetAlternative(typeof(BoneTea), "AfterSideTurnStart")]
     public static class BoneTeaPatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(BoneTea),
+            new PatchTargetCandidate("AfterPlayerTurnStart"),
+            new PatchTargetCandidate("AfterSideTurnStart")
+        );
+
         class BoneTeaState {
             public int Round { get; set; }
             public bool WasUsedUp { get; set; }

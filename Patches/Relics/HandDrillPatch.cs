@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -8,19 +9,41 @@ using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace StatTheRelics.Patches.Relics {
-    [HarmonyPatch(typeof(HandDrill), nameof(HandDrill.AfterDamageGiven))]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(HandDrill), "AfterBlockBroken")]
+    [PatchTargetAlternative(typeof(HandDrill), "AfterDamageGiven")]
     public static class HandDrillPatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(HandDrill),
+            new PatchTargetCandidate("AfterBlockBroken"),
+            new PatchTargetCandidate("AfterDamageGiven")
+        );
+
         class DrillState {
             public int Vulnerable { get; set; }
         }
 
-        static void Prefix(HandDrill __instance, PlayerChoiceContext choiceContext, Creature dealer, DamageResult result, ValueProp props, Creature target, CardModel cardSource, ref object __state) {
+        static void Prefix(HandDrill __instance, MethodBase __originalMethod, object[] __args, ref object __state) {
             try {
                 var owner = __instance?.Owner;
                 var ownerCreature = owner?.Creature;
-                if (__instance == null || owner == null || ownerCreature == null || result == null || target == null) return;
-                if (dealer != ownerCreature && dealer?.PetOwner != owner) return;
-                if (target.IsPlayer || !result.WasBlockBroken) return;
+                if (__instance == null || owner == null || ownerCreature == null) return;
+
+                Creature? target;
+                Creature? breaker;
+                if (__originalMethod.Name == "AfterBlockBroken") {
+                    target = __args.Length > 1 ? __args[1] as Creature : null;
+                    breaker = __args.Length > 2 ? __args[2] as Creature : null;
+                } else {
+                    breaker = __args.Length > 1 ? __args[1] as Creature : null;
+                    var result = __args.Length > 2 ? __args[2] as DamageResult : null;
+                    target = __args.Length > 4 ? __args[4] as Creature : null;
+                    if (result == null || !result.WasBlockBroken) return;
+                }
+
+                if (target == null || breaker == null) return;
+                if (breaker != ownerCreature && breaker.PetOwner != owner) return;
+                if (target.IsPlayer) return;
 
                 __state = new DrillState {
                     Vulnerable = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "Vulnerable", 2))

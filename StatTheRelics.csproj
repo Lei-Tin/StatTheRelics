@@ -15,6 +15,7 @@
 		<ModDisplayName Condition="'$(ModDisplayName)' == ''">Example Mod</ModDisplayName>
 		<ModAuthor Condition="'$(ModAuthor)' == ''">Unknown</ModAuthor>
 		<ModVersion Condition="'$(ModVersion)' == ''">1.0.0</ModVersion>
+		<MinGameVersion Condition="'$(MinGameVersion)' == ''">0.107.1</MinGameVersion>
 
 		<AssemblyName>$(ModName)</AssemblyName>
 		<Version>$(ModVersion)</Version>
@@ -85,6 +86,7 @@ project/assembly_name="$(ModName)"
 "description": "$(ModDescription)",
 "author": "$(ModAuthor)",
 "version": "$(ModVersion)",
+"min_game_version": "$(MinGameVersion)",
 "has_pck": true,
 "has_dll": true,
 "dependencies": [],

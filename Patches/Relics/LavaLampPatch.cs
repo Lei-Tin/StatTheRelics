@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HarmonyLib;
@@ -157,14 +158,16 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(CardPileCmd), nameof(CardPileCmd.Add), new Type[] {
-        typeof(IEnumerable<CardModel>),
-        typeof(CardPile),
-        typeof(CardPilePosition),
-        typeof(AbstractModel),
-        typeof(bool)
-    })]
+    [HarmonyPatch]
+    [PatchTargetAlternative(typeof(CardPileCmd), nameof(CardPileCmd.Add), typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel), typeof(bool))]
+    [PatchTargetAlternative(typeof(CardPileCmd), nameof(CardPileCmd.Add), typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel), typeof(bool), typeof(bool))]
     public static class LavaLampCardPileAddManyByPilePatch {
+        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
+            typeof(CardPileCmd),
+            new PatchTargetCandidate(nameof(CardPileCmd.Add), typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel), typeof(bool), typeof(bool)),
+            new PatchTargetCandidate(nameof(CardPileCmd.Add), typeof(IEnumerable<CardModel>), typeof(CardPile), typeof(CardPilePosition), typeof(AbstractModel), typeof(bool))
+        );
+
         static void Postfix(IEnumerable<CardModel> cards, Task<IReadOnlyList<CardPileAddResult>> __result) {
             LavaLampPatch.CountWhenAdded(__result, cards);
         }

@@ -4,6 +4,26 @@ using MegaCrit.Sts2.Core.Nodes.Screens.RunHistoryScreen;
 using StatTheRelics.RelicStats;
 
 namespace StatTheRelics.Patches {
+    // Run History can be embedded inside Compendium, so it may be hidden without
+    // being the submenu popped from the global stack.
+    [HarmonyPatch(typeof(NRunHistory))]
+    internal static class RunHistoryVisibilityPatch {
+        [HarmonyPatch("OnSubmenuOpened")]
+        [HarmonyPostfix]
+        static void AfterOpened() {
+            try { RelicStatsPersistence.EnterHistoryView("run-history-opened"); } catch { }
+        }
+
+        [HarmonyPatch("OnSubmenuHidden")]
+        [HarmonyPostfix]
+        static void AfterHidden() {
+            try {
+                RelicStatsPersistence.RestoreSuspendedRunSnapshotIfAny();
+                RelicStatsPersistence.ForceExitHistoryView("run-history-hidden");
+            } catch { }
+        }
+    }
+
     // Detect run history open/close via the submenu stack to reliably suspend and restore live stats.
     [HarmonyPatch(typeof(NSubmenuStack))]
     internal static class SubmenuStackHistoryPatch {
