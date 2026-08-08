@@ -88,7 +88,7 @@ namespace StatTheRelics.Patches.Relics {
                 foreach (var name in added) {
                     if (!state.ModifiedOffers.TryGetValue(name, out var remaining) || remaining <= 0) continue;
                     state.ModifiedOffers[name] = remaining - 1;
-                    AppendText(state.Relic, "Card Selected", name);
+                    AppendCard(state.Relic, "Card Selected", name);
                 }
             } catch { }
         }
@@ -109,7 +109,7 @@ namespace StatTheRelics.Patches.Relics {
                     if (creationResult.ModifyingRelics?.OfType<SilkenTress>().Any() != true) continue;
                     var card = creationResult.Card;
                     if (card == null) continue;
-                    var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                 }
             } catch { }
@@ -117,11 +117,11 @@ namespace StatTheRelics.Patches.Relics {
             return names;
         }
 
-        internal static void AppendText(SilkenTress relic, string key, string value) {
+        internal static void AppendCard(SilkenTress relic, string key, string value) {
             if (string.IsNullOrWhiteSpace(value)) return;
             lock (Sync) {
-                var current = RelicTracker.GetTextByType(SilkenTressPatch.TypeName, key);
-                RelicTracker.SetTextByType(SilkenTressPatch.TypeName, key, string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
+                var current = RelicTracker.GetStoredTextByType(SilkenTressPatch.TypeName, key);
+                RelicTracker.SetTextByType(SilkenTressPatch.TypeName, key, DeckUtil.AppendCardStorageValue(current, value));
             }
         }
     }

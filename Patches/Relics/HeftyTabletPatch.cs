@@ -64,11 +64,11 @@ namespace StatTheRelics.Patches.Relics {
                 if (relic == null || cards == null || cards.Count <= 0) return;
                 var names = new List<string>();
                 foreach (var card in cards) {
-                    var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                 }
 
-                if (names.Count > 0) RelicTracker.SetText(relic, "Offered Cards", string.Join("\n", names));
+                if (names.Count > 0) RelicTracker.SetText(relic, "Offered Cards", DeckUtil.JoinCardList(names));
             } catch { }
         }
 

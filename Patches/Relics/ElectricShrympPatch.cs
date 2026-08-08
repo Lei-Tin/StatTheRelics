@@ -80,7 +80,7 @@ namespace StatTheRelics.Patches.Relics {
                     try {
                         if (task.Status != TaskStatus.RanToCompletion || task.Result == null) return;
                         var names = task.Result
-                            .Select(card => DeckUtil.GetCardDisplayName(card, preferBaseTitle: true))
+                            .Select(card => DeckUtil.GetCardStorageValue(card))
                             .Where(name => !string.IsNullOrWhiteSpace(name))
                             .ToList();
                         if (names.Count <= 0) return;
@@ -105,11 +105,8 @@ namespace StatTheRelics.Patches.Relics {
                 var card = ReflectionUtil.GetMemberValue(__instance, "Card") as CardModel;
                 if (card == null || card.Owner != player) return;
 
-                var tracked = RelicTracker.GetText(relic, "Card Enchanted");
-                var cardName = DeckUtil.GetCardMatchName(card);
-                if (string.IsNullOrWhiteSpace(tracked) || string.IsNullOrWhiteSpace(cardName)) return;
-                if (!tracked.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Any(name => string.Equals(DeckUtil.NormalizeCardNameForMatching(name), cardName, StringComparison.OrdinalIgnoreCase))) return;
+                var tracked = RelicTracker.GetStoredText(relic, "Card Enchanted");
+                if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
                 __state = relic;
             } catch { }

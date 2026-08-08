@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It appends usage data to relic tooltips and saves that data alongside run saves and run history.
 
-Current version: `1.0.4`
+Current version: `1.0.5`
 
 [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122)
 
@@ -15,7 +15,7 @@ Current version: `1.0.4`
 - Restores saved stats when continuing a run or viewing run history.
 - Follows the game's language automatically and supports community translation files.
 - Stores the mod version and game build in each sidecar snapshot.
-- Keeps older snapshots readable after a mod or game update by showing their stored JSON values under an archived-stats header.
+- Keeps older snapshots readable after a mod or game update under an archived-stats header.
 
 ## Installation
 
@@ -52,9 +52,9 @@ Install and enable the Mod before starting the run whose statistics you want to 
 
 Run-history views display the last compatible saved snapshot. Relic Collection and other compendium-style views intentionally do not show run-specific stats.
 
-Stat snapshots include the Mod version and game build. After an update, older snapshots remain readable under an archived-stats header and are displayed exactly as saved; new counters or renamed fields are not inferred retroactively.
+Stat snapshots include the Mod version and game build. After an update, older snapshots remain readable under an archived-stats header without applying the current relic implementation. Stored card and relic references are resolved using the current game language; new counters or renamed fields are not inferred retroactively.
 
-Slay the Spire 2 is in active development and game updates can change its Mod API. The Workshop release targets the game's current main branch. Beta branches may temporarily be unsupported until the Mod is updated.
+Slay the Spire 2 is in active development and game updates can change its Mod API. Version `1.0.5` supports stable `v0.107.1` and public beta `v0.110.1`; later game updates may require a matching Mod update.
 
 The game keeps modded and unmodded saves separately. Switching back to an unmodded launch can therefore show different progress; it does not mean that Stat The Relics deleted a save. Recent game versions copy unmodded progress when creating the modded save for the first time, as described in the official [Major Update #2 notes](https://steamcommunity.com/ogg/2868840/announcements/detail/710026912607505281).
 
@@ -65,8 +65,8 @@ If no counters appear:
 1. Confirm **Stat The Relics** is listed and enabled in the main-menu **Modding** screen, then restart the game.
 2. Confirm Steam finished downloading the Workshop item and that no second manual copy is installed.
 3. Test during an active run by hovering an owned relic; the Relic Collection screen intentionally shows no run counters.
-4. If a tooltip has an archived-stats header, its values came from an older Mod or game version and are shown exactly as saved.
-5. Use the game's main branch and update both the game and the Mod. A newly released game or beta update may require a matching Mod update.
+4. If a tooltip has an archived-stats header, its values came from an older Mod or game version and are shown without applying the current relic implementation.
+5. Update both the game and the Mod. A newly released game or beta update may require a matching Mod update.
 
 ## Translation
 
@@ -98,7 +98,7 @@ Create `local.props` in the project root:
     <ModDisplayName>Stat The Relics</ModDisplayName>
     <ModDescription>Displays stats for the various relics found in the spire</ModDescription>
     <ModAuthor>LeiT</ModAuthor>
-    <ModVersion>1.0.4</ModVersion>
+    <ModVersion>1.0.5</ModVersion>
     <MinGameVersion>0.107.1</MinGameVersion>
   </PropertyGroup>
 </Project>

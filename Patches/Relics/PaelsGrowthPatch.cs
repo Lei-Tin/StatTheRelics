@@ -50,7 +50,7 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (relic == null || cards == null) return;
                 var names = cards
-                    .Select(card => DeckUtil.GetCardDisplayName(card, preferBaseTitle: true))
+                    .Select(card => DeckUtil.GetCardStorageValue(card))
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToList();
                 if (names.Count > 0) RelicTracker.SetText(relic, "Cards Enchanted", DeckUtil.JoinCardList(names));

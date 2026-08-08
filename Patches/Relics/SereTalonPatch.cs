@@ -69,17 +69,11 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (relic == null || card == null || string.IsNullOrWhiteSpace(key)) return;
 
-                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
-                if (string.IsNullOrWhiteSpace(name)) return;
-                AppendText(relic, key, name);
+                lock (Sync) {
+                    var current = RelicTracker.GetStoredText(relic, key);
+                    RelicTracker.SetText(relic, key, DeckUtil.AppendCardList(current, card));
+                }
             } catch { }
-        }
-
-        static void AppendText(SereTalon relic, string key, string value) {
-            lock (Sync) {
-                var current = RelicTracker.GetText(relic, key);
-                RelicTracker.SetText(relic, key, string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
-            }
         }
 
         internal static void CountPlayed(CardModel card) {
@@ -88,12 +82,8 @@ namespace StatTheRelics.Patches.Relics {
                 const string typeName = "MegaCrit.Sts2.Core.Models.Relics.SereTalon";
                 if (!RelicTracker.HasTrackedRelicType(typeName)) return;
 
-                var tracked = ParseCardList(RelicTracker.GetTextByType(typeName, "Wishes Added"));
-                if (tracked.Count == 0) return;
-
-                var cardName = DeckUtil.GetCardMatchName(card);
-                if (string.IsNullOrWhiteSpace(cardName)) return;
-                if (!tracked.Contains(cardName)) return;
+                var tracked = RelicTracker.GetStoredTextByType(typeName, "Wishes Added");
+                if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
                 RelicTracker.AddAmountByType(typeName, "Wishes Played", 1);
             } catch { }

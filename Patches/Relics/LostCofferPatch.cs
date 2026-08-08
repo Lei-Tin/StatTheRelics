@@ -97,7 +97,7 @@ namespace StatTheRelics.Patches.Relics {
             var names = new List<string>();
             try {
                 foreach (var result in GetCreationResults(reward)) {
-                    var name = DeckUtil.GetCardDisplayName(result.Card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(result.Card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                 }
             } catch { }

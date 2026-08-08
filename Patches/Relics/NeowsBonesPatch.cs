@@ -52,6 +52,14 @@ namespace StatTheRelics.Patches.Relics {
                 RelicTracker.SetText(relic, key, string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
             } catch { }
         }
+
+        internal static void AppendCard(NeowsBones relic, string key, CardModel card) {
+            try {
+                if (relic == null || card == null) return;
+                var current = RelicTracker.GetStoredText(relic, key);
+                RelicTracker.SetText(relic, key, DeckUtil.AppendCardList(current, card));
+            } catch { }
+        }
     }
 
     [HarmonyPatch(typeof(RelicReward), nameof(RelicReward.Populate))]
@@ -88,7 +96,7 @@ namespace StatTheRelics.Patches.Relics {
                         if (task.Status != TaskStatus.RanToCompletion) return;
                         var success = ReflectionUtil.GetMemberValue(task.Result, "success");
                         if (success is bool value && !value) return;
-                        NeowsBonesPatch.AppendText(bones, "Curse Added", DeckUtil.GetCardDisplayName(card, preferBaseTitle: true));
+                        NeowsBonesPatch.AppendCard(bones, "Curse Added", card);
                     } catch { }
                 });
             } catch { }

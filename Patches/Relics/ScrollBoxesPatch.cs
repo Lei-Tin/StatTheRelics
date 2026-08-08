@@ -54,13 +54,10 @@ namespace StatTheRelics.Patches.Relics {
                     var bundle = bundles[i];
                     if (bundle == null) continue;
 
-                    names.Add($"Box {i + 1}:");
                     foreach (var card in bundle) {
-                        var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                        var name = DeckUtil.GetCardStorageValue(card, $"Box {i + 1}");
                         if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                     }
-
-                    if (i + 1 < bundles.Count) names.Add(string.Empty);
                 }
 
                 if (names.Count > 0) RelicTracker.SetText(relic, "Cards Offered", DeckUtil.JoinCardList(names));
@@ -70,7 +67,7 @@ namespace StatTheRelics.Patches.Relics {
         internal static void SetAddedCards(ScrollBoxes relic, IEnumerable<CardModel> cards) {
             try {
                 var added = cards
-                    .Select(card => DeckUtil.GetCardDisplayName(card, preferBaseTitle: true))
+                    .Select(card => DeckUtil.GetCardStorageValue(card))
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToList();
                 if (added.Count > 0) RelicTracker.SetText(relic, "Cards Added", DeckUtil.JoinCardList(added));

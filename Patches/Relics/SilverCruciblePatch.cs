@@ -29,7 +29,7 @@ namespace StatTheRelics.Patches.Relics {
                     if (creationResult.ModifyingRelics?.OfType<SilverCrucible>().Any() != true) continue;
                     var card = creationResult.Card;
                     if (card == null) continue;
-                    var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(card);
                     if (string.IsNullOrWhiteSpace(name)) continue;
                     state.ModifiedOffers[name] = state.ModifiedOffers.TryGetValue(name, out var value) ? value + 1 : 1;
                 }
@@ -49,7 +49,7 @@ namespace StatTheRelics.Patches.Relics {
                 foreach (var name in added) {
                     if (!state.ModifiedOffers.TryGetValue(name, out var remaining) || remaining <= 0) continue;
                     state.ModifiedOffers[name] = remaining - 1;
-                    AppendText(state.Relic, "Cards Added", name);
+                    AppendCard(state.Relic, "Cards Added", name);
                 }
             } catch { }
         }
@@ -63,10 +63,10 @@ namespace StatTheRelics.Patches.Relics {
             }
         }
 
-        internal static void AppendText(SilverCrucible relic, string key, string value) {
+        internal static void AppendCard(SilverCrucible relic, string key, string value) {
             if (string.IsNullOrWhiteSpace(value)) return;
-            var current = RelicTracker.GetText(relic, key);
-            RelicTracker.SetText(relic, key, string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
+            var current = RelicTracker.GetStoredText(relic, key);
+            RelicTracker.SetText(relic, key, DeckUtil.AppendCardStorageValue(current, value));
         }
     }
 

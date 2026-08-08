@@ -57,8 +57,7 @@ namespace StatTheRelics.Patches.Relics {
 
         internal static bool IsApparition(CardModel card) {
             try {
-                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
-                return string.Equals(name, "Apparition", StringComparison.OrdinalIgnoreCase);
+                return string.Equals(card.GetType().FullName, "MegaCrit.Sts2.Core.Models.Cards.Apparition", StringComparison.Ordinal);
             } catch {
                 return false;
             }

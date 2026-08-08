@@ -46,7 +46,7 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 var upgraded = state.Cards
                     .Where(card => !card.WasUpgraded && IsUpgraded(card.Card))
-                    .Select(card => card.Name)
+                    .Select(card => DeckUtil.GetCardStorageValue(card.Card))
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToList();
 
@@ -58,7 +58,6 @@ namespace StatTheRelics.Patches.Relics {
             foreach (var card in DeckUtil.EnumerateDeckCards(relic.Owner)) {
                 yield return new CardState {
                     Card = card,
-                    Name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true),
                     WasUpgraded = IsUpgraded(card)
                 };
             }

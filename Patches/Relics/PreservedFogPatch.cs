@@ -47,7 +47,7 @@ namespace StatTheRelics.Patches.Relics {
 
                 var added = DeckUtil.FindAddedCards(state.BeforeDeck, after);
                 var curse = added.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(curse)) RelicTracker.SetText(relic, "Curse Added", curse);
+                if (!string.IsNullOrWhiteSpace(curse)) RelicTracker.SetText(relic, "Curse Added", DeckUtil.JoinCardList(new[] { curse }));
             } catch { }
         }
     }

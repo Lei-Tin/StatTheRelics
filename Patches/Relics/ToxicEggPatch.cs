@@ -46,7 +46,7 @@ namespace StatTheRelics.Patches.Relics {
 
                 foreach (var creationResult in GetCreationResults(reward)) {
                     if (creationResult.ModifyingRelics?.OfType<ToxicEgg>().Any() != true) continue;
-                    var name = DeckUtil.GetCardDisplayName(creationResult.Card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(creationResult.Card);
                     if (string.IsNullOrWhiteSpace(name)) continue;
                     state.ModifiedOffers[name] = state.ModifiedOffers.TryGetValue(name, out var value) ? value + 1 : 1;
                 }
@@ -65,7 +65,7 @@ namespace StatTheRelics.Patches.Relics {
                     var key = RuntimeHelpers.GetHashCode(card);
                     if (state.BeforeDeckCards.Contains(key)) continue;
 
-                    var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(card);
                     if (string.IsNullOrWhiteSpace(name)) continue;
                     if (!state.ModifiedOffers.TryGetValue(name, out var remaining) || remaining <= 0) continue;
                     state.ModifiedOffers[name] = remaining - 1;

@@ -146,6 +146,7 @@
   "StatTheRelics data was saved by mod version {0}, but the current mod version is {1}. No relic stats are available for this save.": "StatTheRelics data was saved by mod version {0}, but the current mod version is {1}. No relic stats are available for this save.",
   "Strength Gained": "Strength Gained",
   "Strength Given": "Strength Given",
+  "Stored values are shown without applying the current relic implementation.": "Stored values are shown without applying the current relic implementation.",
   "Strike & Defends Exhausted (from ethereal)": "Strike & Defends Exhausted (from ethereal)",
   "Strikes Enchanted": "Strikes Enchanted",
   "Summons": "Summons",

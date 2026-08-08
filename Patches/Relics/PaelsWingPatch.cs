@@ -41,10 +41,9 @@ namespace StatTheRelics.Patches.Relics {
                 var added = FindAdded(state.BeforeRelics, CaptureRelics(relic));
                 if (added.Count <= 0) return;
 
-                var current = RelicTracker.GetText(relic, "Relics Given");
-                var value = string.Join("\n", added);
+                var current = RelicTracker.GetStoredText(relic, "Relics Given");
                 RelicTracker.AddAmount(relic, "Relics Given", added.Count);
-                RelicTracker.SetText(relic, "Relics Given", string.IsNullOrWhiteSpace(current) ? value : current + "\n" + value);
+                RelicTracker.SetText(relic, "Relics Given", RelicNameUtil.AppendTypeNames(current, added));
             } catch { }
         }
 
@@ -55,8 +54,8 @@ namespace StatTheRelics.Patches.Relics {
 
             foreach (var ownedRelic in relics) {
                 if (ownedRelic == null) continue;
-                var name = ReflectionUtil.GetModelTitle(ownedRelic) ?? ownedRelic.GetType().Name;
-                result[name] = result.TryGetValue(name, out var count) ? count + 1 : 1;
+                var typeName = ownedRelic.GetType().FullName ?? ownedRelic.GetType().Name;
+                result[typeName] = result.TryGetValue(typeName, out var count) ? count + 1 : 1;
             }
             return result;
         }

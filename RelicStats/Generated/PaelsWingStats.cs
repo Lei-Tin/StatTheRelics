@@ -15,10 +15,8 @@ namespace StatTheRelics.RelicStats.Generated {
             var sb = new StringBuilder();
             if (historyMode && !string.IsNullOrEmpty(bannerNote)) sb.AppendLine(bannerNote);
             sb.AppendLine($"Relics Given: {(counters.TryGetValue("Relics Given", out var count) ? count : 0)}");
-            if (relics != "None") {
-                sb.AppendLine("Relics:");
-                sb.Append(relics);
-            }
+            sb.AppendLine("Relics:");
+            sb.Append(relics);
             return sb.ToString().TrimEnd();
         }
     }

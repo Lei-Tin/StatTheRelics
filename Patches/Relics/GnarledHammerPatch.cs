@@ -58,13 +58,8 @@ namespace StatTheRelics.Patches.Relics {
                     CountedCards.Add(card, new object());
                 }
 
-                var existing = RelicTracker.GetText(relic, EnchantedCardsKey);
-                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
-                var cards = string.IsNullOrWhiteSpace(existing)
-                    ? new List<string>()
-                    : existing.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                cards.Add(name);
-                RelicTracker.SetText(relic, EnchantedCardsKey, string.Join("\n", cards));
+                var existing = RelicTracker.GetStoredText(relic, EnchantedCardsKey);
+                RelicTracker.SetText(relic, EnchantedCardsKey, DeckUtil.AppendCardList(existing, card));
             } catch { }
         }
 
@@ -74,12 +69,8 @@ namespace StatTheRelics.Patches.Relics {
                 if (!RelicTracker.HasTrackedRelicType(GnarledHammerTypeName)) return;
                 if (!IsSharpAndActive(card)) return;
 
-                var tracked = ParseCardList(RelicTracker.GetTextByType(GnarledHammerTypeName, EnchantedCardsKey));
-                if (tracked.Count == 0) return;
-
-                var cardName = DeckUtil.GetCardMatchName(card);
-                if (string.IsNullOrWhiteSpace(cardName)) return;
-                if (!tracked.TryGetValue(cardName, out var copies) || copies <= 0) return;
+                var tracked = RelicTracker.GetStoredTextByType(GnarledHammerTypeName, EnchantedCardsKey);
+                if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
                 RelicTracker.AddAmountByType(GnarledHammerTypeName, "Enchanted Cards Played", 1);
             } catch { }

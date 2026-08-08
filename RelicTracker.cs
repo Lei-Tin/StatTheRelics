@@ -137,6 +137,16 @@ public static class RelicTracker {
             var instanceKey = GetInstanceKey(relic);
             if (instanceKey == null) return null;
             if (!dataByType.TryGetValue(instanceKey, out var d) || d == null) return null;
+            return d.TextStats.TryGetValue(key, out var value) ? FormatStoredTextValue(value) : null;
+        } catch { return null; }
+    }
+
+    public static string? GetStoredText(object relic, string key) {
+        try {
+            if (relic == null || string.IsNullOrWhiteSpace(key)) return null;
+            var instanceKey = GetInstanceKey(relic);
+            if (instanceKey == null) return null;
+            if (!dataByType.TryGetValue(instanceKey, out var d) || d == null) return null;
             return d.TextStats.TryGetValue(key, out var value) ? value : null;
         } catch { return null; }
     }
@@ -146,8 +156,26 @@ public static class RelicTracker {
             if (string.IsNullOrWhiteSpace(relicTypeName)) return null;
             if (string.IsNullOrWhiteSpace(key)) return null;
             if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return null;
+            return d.TextStats.TryGetValue(key, out var value) ? FormatStoredTextValue(value) : null;
+        } catch { return null; }
+    }
+
+    public static string? GetStoredTextByType(string relicTypeName, string key) {
+        try {
+            if (string.IsNullOrWhiteSpace(relicTypeName) || string.IsNullOrWhiteSpace(key)) return null;
+            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return null;
             return d.TextStats.TryGetValue(key, out var value) ? value : null;
         } catch { return null; }
+    }
+
+    static string FormatStoredTextValue(string value) {
+        return RelicNameUtil.FormatStoredRelicList(DeckUtil.FormatStoredCardList(value));
+    }
+
+    static Dictionary<string, string> FormatStoredTextStats(IReadOnlyDictionary<string, string> textStats) {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var pair in textStats) result[pair.Key] = FormatStoredTextValue(pair.Value);
+        return result;
     }
 
     public static int GetCounterByType(string relicTypeName, string key) {
@@ -223,8 +251,9 @@ public static class RelicTracker {
 
             var def = RelicStatsRegistry.GetDefinition(typeKey);
             var counters = d?.Counters ?? new ConcurrentDictionary<string, int>();
-            var textStats = d?.TextStats ?? new ConcurrentDictionary<string, string>();
-            if (rawDisplayMode) return FormatWithHeader(FormatRawStoredData(counters, textStats, bannerNote));
+            var storedTextStats = d?.TextStats ?? new ConcurrentDictionary<string, string>();
+            if (rawDisplayMode) return FormatWithHeader(FormatRawStoredData(counters, storedTextStats, bannerNote));
+            var textStats = FormatStoredTextStats(storedTextStats);
 
             if (RelicStatsRegistry.IsImplementationChanged(typeKey)) {
                 var fallbackBody = FormatImplementationChanged(counters, historyMode, historyMode ? bannerNote : string.Empty);
@@ -258,7 +287,7 @@ public static class RelicTracker {
         if (textStats.Count > 0) {
             sb.AppendLine(Localization.Get("Text stats") + ":");
             foreach (var kv in textStats.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)) {
-                sb.AppendLine($"{kv.Key}: {kv.Value}");
+                sb.AppendLine($"{kv.Key}: {FormatStoredTextValue(kv.Value)}");
             }
         }
 

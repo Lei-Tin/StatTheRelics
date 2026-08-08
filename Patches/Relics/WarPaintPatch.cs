@@ -19,7 +19,6 @@ namespace StatTheRelics.Patches.Relics {
 
         sealed class State {
             public Dictionary<int, UpgradeSnapshot> Cards { get; } = new();
-            public Dictionary<int, string> Names { get; } = new();
         }
 
         static void Prefix(WarPaint __instance, ref object __state) {
@@ -43,7 +42,6 @@ namespace StatTheRelics.Patches.Relics {
             foreach (var card in DeckUtil.EnumerateDeckCards(relic.Owner)) {
                 var key = RuntimeHelpers.GetHashCode(card);
                 state.Cards[key] = GetUpgradeSnapshot(card);
-                state.Names[key] = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
             }
 
             return state;
@@ -60,7 +58,7 @@ namespace StatTheRelics.Patches.Relics {
                 if (after.Level <= before.Level && (!after.IsUpgraded || before.IsUpgraded)) continue;
 
                 count++;
-                if (state.Names.TryGetValue(key, out var name) && !string.IsNullOrWhiteSpace(name)) names.Add(name);
+                names.Add(DeckUtil.GetCardStorageValue(card));
             }
 
             if (names.Count > 0) RelicTracker.SetText(relic, "Cards Upgraded", DeckUtil.JoinCardList(names));

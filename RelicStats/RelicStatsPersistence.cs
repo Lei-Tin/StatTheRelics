@@ -256,7 +256,7 @@ namespace StatTheRelics.RelicStats {
         static void MarkAsArchivedSnapshot(SnapshotEnvelope env) {
             var savedMod = DisplayVersion(env.ModVersion);
             var savedGame = DisplayVersion(env.GameVersion);
-            env.Note = $"Archived stats (mod {savedMod}, game {savedGame}; current mod {currentModVersion}, game {currentGameVersion})\nValues below are shown exactly as saved.";
+            env.Note = $"Archived stats (mod {savedMod}, game {savedGame}; current mod {currentModVersion}, game {currentGameVersion})\nStored values are shown without applying the current relic implementation.";
             env.StatsUnavailable = false;
             env.RawDisplay = true;
         }

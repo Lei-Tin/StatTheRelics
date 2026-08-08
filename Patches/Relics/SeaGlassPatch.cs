@@ -66,7 +66,7 @@ namespace StatTheRelics.Patches.Relics {
                 var names = rewards
                     .Select(result => ReflectionUtil.GetMemberValue(result, "Card"))
                     .Where(card => card != null)
-                    .Select(card => DeckUtil.GetCardDisplayName(card!, preferBaseTitle: true))
+                    .Select(card => DeckUtil.GetCardStorageValue(card!))
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToList();
                 if (names.Count > 0) RelicTracker.SetText(relic, "Cards Offered", DeckUtil.JoinCardList(names));

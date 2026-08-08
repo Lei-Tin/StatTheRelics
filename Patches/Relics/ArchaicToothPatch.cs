@@ -11,8 +11,8 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (__instance == null) return;
 
-                var starterName = starterCard == null ? null : DeckUtil.GetCardDisplayName(starterCard);
-                var transformedName = __result == null ? null : DeckUtil.GetCardDisplayName(__result);
+                var starterName = starterCard == null ? null : DeckUtil.SingleCardList(starterCard);
+                var transformedName = __result == null ? null : DeckUtil.SingleCardList(__result);
 
                 RelicTracker.SetText(__instance, "Card Lost", string.IsNullOrWhiteSpace(starterName) ? "Unknown" : starterName);
                 RelicTracker.SetText(__instance, "Card Obtained", string.IsNullOrWhiteSpace(transformedName) ? "Unknown" : transformedName);

@@ -56,10 +56,10 @@ namespace StatTheRelics.Patches.Relics {
                     if (!state.Enchanted.TryGetValue(key, out var wasEnchanted) || wasEnchanted) continue;
                     if (ReflectionUtil.GetMemberValue(card, "Enchantment") == null) continue;
 
-                    var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                     if (card is CardModel cardModel && !EnchantedCards.TryGetValue(cardModel, out _)) EnchantedCards.Add(cardModel, Marker);
-                    if (card is CardModel matchCard) EnchantedCardNames.Add(DeckUtil.GetCardMatchName(matchCard));
+                    if (card is CardModel matchCard) EnchantedCardNames.Add(DeckUtil.GetCardCodeName(matchCard));
                 }
 
                 if (names.Count <= 0) return;
@@ -73,7 +73,7 @@ namespace StatTheRelics.Patches.Relics {
                 if (card == null) return;
                 if (!RelicTracker.HasTrackedRelicType(TypeName)) return;
                 if (ReflectionUtil.GetMemberValue(card, "Enchantment") == null) return;
-                if (!EnchantedCards.TryGetValue(card, out _) && !EnchantedCardNames.Contains(DeckUtil.GetCardMatchName(card))) return;
+                if (!EnchantedCards.TryGetValue(card, out _) && !EnchantedCardNames.Contains(DeckUtil.GetCardCodeName(card))) return;
                 RelicTracker.AddAmountByType(TypeName, "Enchanted Cards Played", 1);
             } catch { }
         }

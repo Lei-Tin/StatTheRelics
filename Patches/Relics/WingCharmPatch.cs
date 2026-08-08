@@ -77,7 +77,7 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 foreach (var creationResult in creationResults) {
                     if (creationResult.ModifyingRelics?.OfType<WingCharm>().Any() != true) continue;
-                    var name = DeckUtil.GetCardDisplayName(creationResult.Card, preferBaseTitle: true);
+                    var name = DeckUtil.GetCardStorageValue(creationResult.Card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                 }
             } catch { }

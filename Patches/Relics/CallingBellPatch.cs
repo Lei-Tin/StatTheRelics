@@ -46,7 +46,7 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 var after = DeckUtil.CaptureDeckHistogramFromRelicOwner(relic, preferBaseTitle: true);
                 var added = DeckUtil.FindAddedCards(state.BeforeDeck, after);
-                var curse = added.Count > 0 ? string.Join("\n", added) : "Unknown";
+                var curse = added.Count > 0 ? DeckUtil.JoinCardList(added) : "Unknown";
                 RelicTracker.SetText(relic, "Curse", curse);
             } catch { }
         }

@@ -62,9 +62,8 @@ namespace StatTheRelics.Patches.Relics {
                     if (!countedCards.Add(card.GetHashCode())) return;
                 }
 
-                var name = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
-                var current = RelicTracker.GetText(relic, EnchantedCardsKey);
-                RelicTracker.SetText(relic, EnchantedCardsKey, string.IsNullOrWhiteSpace(current) ? name : current + "\n" + name);
+                var current = RelicTracker.GetStoredText(relic, EnchantedCardsKey);
+                RelicTracker.SetText(relic, EnchantedCardsKey, DeckUtil.AppendCardList(current, card));
             } catch { }
         }
 
@@ -72,12 +71,8 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (card == null) return;
                 if (!RelicTracker.HasTrackedRelicType(TypeName)) return;
-                var tracked = ParseCardList(RelicTracker.GetTextByType(TypeName, EnchantedCardsKey));
-                if (tracked.Count == 0) return;
-
-                var cardName = DeckUtil.GetCardMatchName(card);
-                if (string.IsNullOrWhiteSpace(cardName)) return;
-                if (!tracked.TryGetValue(cardName, out var copies) || copies <= 0) return;
+                var tracked = RelicTracker.GetStoredTextByType(TypeName, EnchantedCardsKey);
+                if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
                 RelicTracker.AddAmountByType(TypeName, "Enchanted Cards Played", 1);
             } catch { }

@@ -12,7 +12,6 @@ namespace StatTheRelics.Patches.Relics {
     public static class NutritiousSoupPatch {
         class State {
             public Dictionary<int, bool> Enchanted { get; } = new();
-            public Dictionary<int, string> Names { get; } = new();
         }
 
         const string TypeName = "MegaCrit.Sts2.Core.Models.Relics.NutritiousSoup";
@@ -25,7 +24,6 @@ namespace StatTheRelics.Patches.Relics {
                 foreach (var card in DeckUtil.EnumerateDeckCards(__instance.Owner)) {
                     var key = RuntimeHelpers.GetHashCode(card);
                     state.Enchanted[key] = ReflectionUtil.GetMemberValue(card, "Enchantment") != null;
-                    state.Names[key] = DeckUtil.GetCardDisplayName(card, preferBaseTitle: true);
                 }
 
                 __state = state;
