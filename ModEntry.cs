@@ -14,6 +14,8 @@ public class ModEntry {
         try {
             ModLog.Info("ModEntry: initialization started");
 
+            Localization.Load();
+
             ModLog.Info("ModEntry: applying declared Harmony patches");
             harmony.PatchAll();
 

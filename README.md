@@ -21,6 +21,21 @@ Install the mod, start or continue a run, and hover a relic to see its tracked s
 
 Relic Collection and other compendium-style views intentionally do not show run-specific stats.
 
+## Translation
+
+All text added to relic tooltips is configured in [localization.json](./localization.json). The checked-in file is the English fallback, so every English key initially maps to the same English value.
+
+To translate the mod, change only the values and leave the English keys unchanged. For example:
+
+```json
+{
+  "Cards Drawn": "抽到的牌",
+  "No stats are available for this relic": "该遗物暂无可用统计数据"
+}
+```
+
+Keep the `{0}` and `{1}` placeholders in the version-mismatch message. Missing or blank entries fall back to English, and a missing or invalid file leaves the mod usable in English. Builds copy `localization.json` next to the mod DLL and include it in the release zip; translators can replace that file without rebuilding the mod.
+
 ## Development
 
 Add or tweak relic-specific formatting by editing a `BaseRelicStats` subclass under [RelicStats/Generated](./RelicStats/Generated) or [RelicStats](./RelicStats).

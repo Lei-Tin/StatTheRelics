@@ -26,6 +26,7 @@
 		<ModImageSource>$(MSBuildProjectDirectory)\StatTheRelics.png</ModImageSource>
 		<ModImageGodotDir>$(GodotProject)\$(ModName)</ModImageGodotDir>
 		<ModImageGodotPath>$(ModImageGodotDir)\mod_image.png</ModImageGodotPath>
+		<LocalizationSource>$(MSBuildProjectDirectory)\localization.json</LocalizationSource>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -43,6 +44,9 @@
 	<ItemGroup>
 		<Compile Remove="tools\**" />
 		<None Remove="tools\**" />
+		<Content Include="localization.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 
 	<!-- Create Godot folder structure -->
@@ -194,6 +198,7 @@ dotnet/embed_build_outputs=false
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(ModsOutputDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
+		<Copy SourceFiles="$(LocalizationSource)" DestinationFolder="$(ModsOutputDir)" Condition="Exists('$(LocalizationSource)')" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(ModsOutputDir)\$(ModName).pck&quot;" />
 	</Target>
 
@@ -210,6 +215,7 @@ dotnet/embed_build_outputs=false
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageModDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(PackageModDir)" />
 		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(PackageModDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
+		<Copy SourceFiles="$(LocalizationSource)" DestinationFolder="$(PackageModDir)" Condition="Exists('$(LocalizationSource)')" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(PackageModDir)\$(ModName).pck&quot;" />
 
 		<Delete Files="$(PackageZipPath)" ContinueOnError="true" />
