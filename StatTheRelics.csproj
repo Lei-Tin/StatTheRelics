@@ -44,10 +44,10 @@
 	<ItemGroup>
 		<Compile Remove="tools\**" />
 		<None Remove="tools\**" />
-		<Content Include="localization\*.json">
+		<Content Include="localization\*.*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-		<LocalizationFiles Include="localization\*.json" />
+		<LocalizationFiles Include="localization\*.*" />
 	</ItemGroup>
 
 	<!-- Create Godot folder structure -->
