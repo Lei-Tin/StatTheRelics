@@ -222,7 +222,7 @@ public static class RelicTracker {
                 ? def.Format(counters, textStats, historyMode, historyMode ? bannerNote : string.Empty)
                 : BaseRelicStats.FormatDefault(RelicStatsRegistry.DefaultCounters, counters, historyMode, historyMode ? bannerNote : string.Empty);
 
-            var bodyText = (body ?? string.Empty).TrimEnd();
+            var bodyText = Localization.TranslateTooltip((body ?? string.Empty).TrimEnd());
             return FormatWithHeader(bodyText);
         } catch { return string.Empty; }
     }
@@ -230,7 +230,7 @@ public static class RelicTracker {
     static string FormatWithHeader(string bodyText) {
         try {
             bodyText = (bodyText ?? string.Empty).TrimEnd();
-            var header = ModLog.RelicStatsHeader ?? string.Empty;
+            var header = Localization.Get(ModLog.RelicStatsHeader ?? string.Empty);
             if (string.IsNullOrWhiteSpace(header)) return bodyText;
             if (string.IsNullOrEmpty(bodyText)) return header;
 

@@ -231,7 +231,7 @@ namespace StatTheRelics.RelicStats {
         }
 
         static SnapshotEnvelope VersionMismatchEnvelope(string? savedVersion) {
-            var saved = string.IsNullOrWhiteSpace(savedVersion) ? "unknown" : savedVersion.Trim();
+            var saved = string.IsNullOrWhiteSpace(savedVersion) ? "Unknown" : savedVersion.Trim();
             return new SnapshotEnvelope {
                 ModVersion = currentModVersion,
                 Counters = new Dictionary<string, Dictionary<string, int>>(),
