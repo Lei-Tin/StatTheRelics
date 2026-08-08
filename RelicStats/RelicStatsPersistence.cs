@@ -277,7 +277,7 @@ namespace StatTheRelics.RelicStats {
 
         static string DisplayVersion(string? version) {
             var normalized = NormalizeVersion(version);
-            return string.IsNullOrWhiteSpace(normalized) ? "unknown" : normalized;
+            return string.IsNullOrWhiteSpace(normalized) ? "Unknown" : normalized;
         }
 
         static string GetCurrentModVersion() {

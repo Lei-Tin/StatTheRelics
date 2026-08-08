@@ -15,6 +15,8 @@ public class ModEntry {
         try {
             ModLog.Info("ModEntry: initialization started");
 
+            Localization.Load();
+
             // Definitions are needed before patching so a failed relic patch can be
             // isolated to its owner and switched to the generic Flash counter.
             ModLog.Info("ModEntry: registering relic stat definitions");

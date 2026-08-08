@@ -210,7 +210,9 @@ public static class RelicTracker {
             if (!runActive && !historyMode) return string.Empty;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return string.Empty;
-            if (!string.IsNullOrWhiteSpace(tooltipOverrideNote)) return FormatWithHeader(tooltipOverrideNote);
+            if (!string.IsNullOrWhiteSpace(tooltipOverrideNote)) {
+                return FormatWithHeader(Localization.TranslateTooltip(tooltipOverrideNote));
+            }
 
             RelicData? d;
             if (historyMode) {
@@ -226,14 +228,14 @@ public static class RelicTracker {
 
             if (RelicStatsRegistry.IsImplementationChanged(typeKey)) {
                 var fallbackBody = FormatImplementationChanged(counters, historyMode, historyMode ? bannerNote : string.Empty);
-                return FormatWithHeader(fallbackBody);
+                return FormatWithHeader(Localization.TranslateTooltip(fallbackBody));
             }
 
             var body = def != null
                 ? def.Format(counters, textStats, historyMode, historyMode ? bannerNote : string.Empty)
                 : BaseRelicStats.FormatDefault(RelicStatsRegistry.DefaultCounters, counters, historyMode, historyMode ? bannerNote : string.Empty);
 
-            var bodyText = (body ?? string.Empty).TrimEnd();
+            var bodyText = Localization.TranslateTooltip((body ?? string.Empty).TrimEnd());
             return FormatWithHeader(bodyText);
         } catch { return string.Empty; }
     }
@@ -244,23 +246,23 @@ public static class RelicTracker {
         string note
     ) {
         var sb = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(note)) sb.AppendLine(note.TrimEnd());
+        if (!string.IsNullOrWhiteSpace(note)) sb.AppendLine(Localization.TranslateTooltip(note.TrimEnd()));
 
         if (counters.Count > 0) {
-            sb.AppendLine("Counters:");
+            sb.AppendLine(Localization.Get("Counters") + ":");
             foreach (var kv in counters.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)) {
                 sb.AppendLine($"{kv.Key}: {kv.Value}");
             }
         }
 
         if (textStats.Count > 0) {
-            sb.AppendLine("Text stats:");
+            sb.AppendLine(Localization.Get("Text stats") + ":");
             foreach (var kv in textStats.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)) {
                 sb.AppendLine($"{kv.Key}: {kv.Value}");
             }
         }
 
-        if (counters.Count == 0 && textStats.Count == 0) sb.Append("No stored values for this relic");
+        if (counters.Count == 0 && textStats.Count == 0) sb.Append(Localization.Get("No stored values for this relic"));
         return sb.ToString().TrimEnd();
     }
 
@@ -279,7 +281,7 @@ public static class RelicTracker {
     static string FormatWithHeader(string bodyText) {
         try {
             bodyText = (bodyText ?? string.Empty).TrimEnd();
-            var header = ModLog.RelicStatsHeader ?? string.Empty;
+            var header = Localization.Get(ModLog.RelicStatsHeader ?? string.Empty);
             if (string.IsNullOrWhiteSpace(header)) return bodyText;
             if (string.IsNullOrEmpty(bodyText)) return header;
 

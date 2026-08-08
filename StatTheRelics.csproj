@@ -27,6 +27,7 @@
 		<ModImageSource>$(MSBuildProjectDirectory)\StatTheRelics.png</ModImageSource>
 		<ModImageGodotDir>$(GodotProject)\$(ModName)</ModImageGodotDir>
 		<ModImageGodotPath>$(ModImageGodotDir)\mod_image.png</ModImageGodotPath>
+		<LocalizationSourceDir>$(MSBuildProjectDirectory)\localization</LocalizationSourceDir>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -44,6 +45,10 @@
 	<ItemGroup>
 		<Compile Remove="tools\**" />
 		<None Remove="tools\**" />
+		<Content Include="localization\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<LocalizationFiles Include="localization\*.*" />
 	</ItemGroup>
 
 	<!-- Create Godot folder structure -->
@@ -193,9 +198,11 @@ dotnet/embed_build_outputs=false
 
 	<Target Name="PostBuild" AfterTargets="Build">
 		<MakeDir Directories="$(ModsOutputDir)" />
+		<MakeDir Directories="$(ModsOutputDir)\localization" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(ModsOutputDir)" />
 		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(ModsOutputDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
+		<Copy SourceFiles="@(LocalizationFiles)" DestinationFolder="$(ModsOutputDir)\localization" SkipUnchangedFiles="true" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(ModsOutputDir)\$(ModName).pck&quot;" />
 	</Target>
 
@@ -208,10 +215,12 @@ dotnet/embed_build_outputs=false
 
 		<RemoveDir Directories="$(PackageRootDir)" />
 		<MakeDir Directories="$(PackageModDir)" />
+		<MakeDir Directories="$(PackageModDir)\localization" />
 
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageModDir)" />
 		<Copy SourceFiles="$(GodotProject)\mod_manifest.json" DestinationFolder="$(PackageModDir)" />
 		<Copy SourceFiles="$(ModImageSource)" DestinationFiles="$(PackageModDir)\mod_image.png" Condition="Exists('$(ModImageSource)')" />
+		<Copy SourceFiles="@(LocalizationFiles)" DestinationFolder="$(PackageModDir)\localization" SkipUnchangedFiles="true" />
 		<Exec Command="&quot;$(GodotExePath)&quot; --headless --path &quot;$(GodotProject)&quot; --export-pack &quot;Windows Desktop&quot; &quot;$(PackageModDir)\$(ModName).pck&quot;" />
 
 		<Delete Files="$(PackageZipPath)" ContinueOnError="true" />
