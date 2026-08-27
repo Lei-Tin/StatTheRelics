@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 using MegaCrit.Sts2.Core.Rewards;
@@ -90,6 +91,39 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(ToxicEgg __instance, bool __result, CardModel newCard) {
             try {
                 if (__result && newCard != null) ToxicEggPatch.CountCard(__instance, newCard);
+            } catch { }
+        }
+    }
+
+    [HarmonyPatch(typeof(MerchantCardEntry), "OnTryPurchase", new Type[] {
+        typeof(MerchantInventory),
+        typeof(bool)
+    })]
+    public static class ToxicEggMerchantCardPurchasePatch {
+        class PurchaseState {
+            public ToxicEgg Relic { get; init; } = null!;
+            public CardModel Card { get; init; } = null!;
+        }
+
+        static void Prefix(MerchantCardEntry __instance, ref object __state) {
+            try {
+                var creationResult = __instance.CreationResult;
+                var relic = creationResult?.ModifyingRelics?.OfType<ToxicEgg>().FirstOrDefault();
+                if (relic == null || creationResult?.Card == null) return;
+                __state = new PurchaseState { Relic = relic, Card = creationResult.Card };
+            } catch { }
+        }
+
+        static void Postfix(Task<(bool, int)> __result, object __state) {
+            try {
+                if (__state is not PurchaseState state || __result == null) return;
+                __result.ContinueWith(task => {
+                    try {
+                        if (task.Status == TaskStatus.RanToCompletion && task.Result.Item1) {
+                            ToxicEggPatch.CountCard(state.Relic, state.Card);
+                        }
+                    } catch { }
+                });
             } catch { }
         }
     }
