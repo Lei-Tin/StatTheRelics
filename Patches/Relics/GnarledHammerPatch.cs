@@ -66,13 +66,14 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountPlayed(CardModel card) {
             try {
                 if (card == null) return;
-                if (!RelicTracker.HasTrackedRelicType(GnarledHammerTypeName)) return;
                 if (!IsSharpAndActive(card)) return;
+                var relic = ReflectionUtil.FindRelic<GnarledHammer>(card.Owner);
+                if (relic == null) return;
 
-                var tracked = RelicTracker.GetStoredTextByType(GnarledHammerTypeName, EnchantedCardsKey);
+                var tracked = RelicTracker.GetStoredText(relic, EnchantedCardsKey);
                 if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
-                RelicTracker.AddAmountByType(GnarledHammerTypeName, "Enchanted Cards Played", 1);
+                RelicTracker.AddAmount(relic, "Enchanted Cards Played", 1);
             } catch { }
         }
 

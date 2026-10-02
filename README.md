@@ -4,13 +4,14 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It appends usage data to relic tooltips and saves that data alongside run saves and run history.
 
-Current version: `1.0.7`
+Current version: `1.0.8`
 
 [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122)
 
 ## Features
 
 - Tracks per-relic counters, including relic-specific effects that are more useful than simple activation counts.
+- Keeps each player's relic counters separate in multiplayer runs.
 - Appends formatted stats directly to relic tooltips during an active run.
 - Restores saved stats when continuing a run or viewing run history.
 - Follows the game's language automatically, with English and Simplified Chinese included.
@@ -55,7 +56,7 @@ Run-history views display the last compatible saved snapshot. Relic Collection a
 
 Stat snapshots include the Mod version and game build. After an update, older snapshots remain readable under an archived-stats header without applying the current relic implementation. Stored card and relic references are resolved using the current game language; new counters or renamed fields are not inferred retroactively.
 
-Slay the Spire 2 is in active development and game updates can change its Mod API. Version `1.0.7` supports stable `v0.107.1` and public beta `v0.110.1`; later game updates may require a matching Mod update.
+Slay the Spire 2 is in active development and game updates can change its Mod API. Version `1.0.8` supports stable `v0.107.1` and public beta `v0.110.1`; later game updates may require a matching Mod update.
 
 The game keeps modded and unmodded saves separately. Switching back to an unmodded launch can therefore show different progress; it does not mean that Stat The Relics deleted a save. Recent game versions copy unmodded progress when creating the modded save for the first time, as described in the official [Major Update #2 notes](https://steamcommunity.com/ogg/2868840/announcements/detail/710026912607505281).
 
@@ -99,7 +100,7 @@ Create `local.props` in the project root:
     <ModDisplayName>Stat The Relics</ModDisplayName>
     <ModDescription>Displays stats for the various relics found in the spire</ModDescription>
     <ModAuthor>LeiT</ModAuthor>
-    <ModVersion>1.0.7</ModVersion>
+    <ModVersion>1.0.8</ModVersion>
     <MinGameVersion>0.107.1</MinGameVersion>
   </PropertyGroup>
 </Project>

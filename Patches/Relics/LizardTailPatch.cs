@@ -26,22 +26,22 @@ namespace StatTheRelics.Patches.Relics {
                 if (state == null) return;
 
                 if (__result == null) {
-                    Count(creature, state);
+                    Count(__instance, creature, state);
                     return;
                 }
 
                 __result.ContinueWith(task => {
                     try {
-                        if (task.Status == TaskStatus.RanToCompletion) Count(creature, state);
+                        if (task.Status == TaskStatus.RanToCompletion) Count(__instance, creature, state);
                     } catch { }
                 });
             } catch { }
         }
 
-        static void Count(Creature creature, TriggerState state) {
+        static void Count(LizardTail relic, Creature creature, TriggerState state) {
             try {
                 var healed = Math.Max(0, creature.CurrentHp - state.BeforeHp);
-                if (healed > 0) RelicTracker.AddAmountByType(TypeName, "HP Healed", healed);
+                if (healed > 0) RelicTracker.AddAmount(relic, "HP Healed", healed);
             } catch { }
         }
     }

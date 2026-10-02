@@ -97,7 +97,6 @@ namespace StatTheRelics.Patches.Relics {
         static void Prefix(Imbued __instance, PlayerChoiceContext choiceContext, Player player, ref object __state) {
             try {
                 if (__instance == null || player == null) return;
-                if (!RelicTracker.HasTrackedRelicType(ElectricShrympPatch.TypeName)) return;
                 var relic = ReflectionUtil.FindRelic<ElectricShrymp>(player);
                 if (relic == null) return;
                 if (ElectricShrympPatch.HasAutoPlayCounted(relic)) return;

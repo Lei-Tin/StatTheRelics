@@ -61,10 +61,7 @@ namespace StatTheRelics.Patches.Relics {
                 if (isUsedUpRaw is not bool isUsedUp || !isUsedUp) return;
                 if (state.UpgradableInHand <= 0) return;
 
-                var relicTypeName = __instance?.GetType().FullName;
-                if (!string.IsNullOrWhiteSpace(relicTypeName)) {
-                    RelicTracker.AddAmountByType(relicTypeName, "Cards Upgraded", state.UpgradableInHand);
-                }
+                RelicTracker.AddAmount(__instance, "Cards Upgraded", state.UpgradableInHand);
             } catch { }
         }
 

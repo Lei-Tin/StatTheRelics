@@ -79,13 +79,13 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountPlayed(CardModel card) {
             try {
                 if (card == null) return;
-                const string typeName = "MegaCrit.Sts2.Core.Models.Relics.SereTalon";
-                if (!RelicTracker.HasTrackedRelicType(typeName)) return;
+                var relic = ReflectionUtil.FindRelic<SereTalon>(card.Owner);
+                if (relic == null) return;
 
-                var tracked = RelicTracker.GetStoredTextByType(typeName, "Wishes Added");
+                var tracked = RelicTracker.GetStoredText(relic, "Wishes Added");
                 if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
-                RelicTracker.AddAmountByType(typeName, "Wishes Played", 1);
+                RelicTracker.AddAmount(relic, "Wishes Played", 1);
             } catch { }
         }
 

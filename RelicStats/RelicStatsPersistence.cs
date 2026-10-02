@@ -125,7 +125,15 @@ namespace StatTheRelics.RelicStats {
                 if (pendingRunSnapshot != null) return;
 
                 if (suspendedRunSnapshot != null) {
-                    ApplySnapshot(suspendedRunSnapshot, historyMode: false);
+                    // dataByType remains the live run store while historyDataByType is displayed.
+                    // Preserve any multiplayer updates made while history was open instead of
+                    // replacing them with the frozen snapshot captured on entry.
+                    RelicTracker.ResumeLiveModePreservingData(
+                        suspendedRunSnapshot.Note,
+                        suspendedRunSnapshot.StatsUnavailable,
+                        suspendedRunSnapshot.RawDisplay
+                    );
+                    activeRunMetadata = suspendedRunSnapshot.RawDisplay ? suspendedRunSnapshot : null;
                     suspendedRunSnapshot = null;
                     historyViewActive = false;
                 }

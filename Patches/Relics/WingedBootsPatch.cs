@@ -23,7 +23,7 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 if (__state is not State state || __instance == null) return;
                 var used = __instance.TimesUsed - state.TimesUsed;
-                if (used > 0) RelicTracker.AddAmountByType(TypeName, "Free Travel Used", used);
+                if (used > 0) RelicTracker.AddAmount(__instance, "Free Travel Used", used);
             } catch { }
         }
     }

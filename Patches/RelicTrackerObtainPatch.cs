@@ -14,7 +14,7 @@ namespace StatTheRelics.Patches;
     typeof(int)
 })]
 internal static class RelicTrackerObtainPatch {
-    static void Prefix(RelicModel relic) {
-        try { RelicTracker.GetOrCreate(relic); } catch { }
+    static void Prefix(RelicModel relic, Player player) {
+        try { RelicTracker.GetOrCreateForOwner(relic, player); } catch { }
     }
 }

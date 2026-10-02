@@ -37,8 +37,12 @@ namespace StatTheRelics.RelicStats {
                 }
             }
 
+            var showsFlashes = keys?.Any(key => string.Equals(key, "Flashes", System.StringComparison.OrdinalIgnoreCase)) == true;
             foreach (var kv in data.OrderBy(k => k.Key)) {
                 if (keys != null && keys.Contains(kv.Key)) continue;
+                // Older snapshots may contain the generic Flash counter even
+                // when this relic's current definition does not declare it.
+                if (!showsFlashes && string.Equals(kv.Key, "Flashes", System.StringComparison.OrdinalIgnoreCase)) continue;
                 sb.AppendLine($"{kv.Key}: {kv.Value}");
             }
 

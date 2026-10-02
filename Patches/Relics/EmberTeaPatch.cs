@@ -50,8 +50,8 @@ namespace StatTheRelics.Patches.Relics {
                 var after = ReflectionUtil.GetIntMemberValue(relic, "CombatsLeft", state.CombatsLeft);
                 if (after >= state.CombatsLeft) return;
 
-                RelicTracker.AddAmountByType(TypeName, "Times Triggered", 1);
-                if (state.Strength > 0) RelicTracker.AddAmountByType(TypeName, "Strength Gained", state.Strength);
+                RelicTracker.AddAmount(relic, "Times Triggered", 1);
+                if (state.Strength > 0) RelicTracker.AddAmount(relic, "Strength Gained", state.Strength);
             } catch { }
         }
     }

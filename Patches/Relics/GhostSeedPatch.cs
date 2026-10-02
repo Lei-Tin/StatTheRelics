@@ -1,11 +1,9 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace StatTheRelics.Patches.Relics {
@@ -19,46 +17,30 @@ namespace StatTheRelics.Patches.Relics {
 
         static bool IsBasicStrikeOrDefend(CardModel card) {
             try {
-                if (Convert.ToInt32(card.Rarity) != 1) return false;
-                return card.Tags != null && (card.Tags.Contains((CardTag)1) || card.Tags.Contains((CardTag)2));
+                if (card.Rarity != CardRarity.Basic) return false;
+                return card.Tags != null && (card.Tags.Contains(CardTag.Strike) || card.Tags.Contains(CardTag.Defend));
             } catch {
                 return false;
             }
         }
     }
 
-    [HarmonyPatch(typeof(CardCmd), nameof(CardCmd.Exhaust), new Type[] {
+    // CardCmd.Exhaust performs the actual pile move and then calls this hook.
+    // Counting here avoids depending on the outer async Exhaust task reaching
+    // a successful continuation after all other exhaust listeners finish.
+    [HarmonyPatch(typeof(Hook), nameof(Hook.AfterCardExhausted), new Type[] {
+        typeof(ICombatState),
         typeof(PlayerChoiceContext),
         typeof(CardModel),
-        typeof(bool),
         typeof(bool)
     })]
     public static class GhostSeedEtherealExhaustPatch {
-        static void Prefix(CardModel card, bool causedByEthereal, ref object __state) {
+        static void Prefix(CardModel card, bool causedByEthereal) {
             try {
-                if (!causedByEthereal || card?.Owner == null) return;
+                if (!causedByEthereal || card == null || card.Owner == null) return;
                 var relic = ReflectionUtil.FindRelic<GhostSeed>(card.Owner);
                 if (relic == null) return;
-                __state = Tuple.Create(relic, card);
-            } catch { }
-        }
-
-        static void Postfix(Task __result, object __state) {
-            try {
-                if (__state is not Tuple<GhostSeed, CardModel> state) return;
-
-                if (__result == null) {
-                    GhostSeedPatch.CountEtherealExhaust(state.Item1, state.Item2);
-                    return;
-                }
-
-                __result.ContinueWith(task => {
-                    try {
-                        if (task.Status == TaskStatus.RanToCompletion) {
-                            GhostSeedPatch.CountEtherealExhaust(state.Item1, state.Item2);
-                        }
-                    } catch { }
-                });
+                GhostSeedPatch.CountEtherealExhaust(relic, card);
             } catch { }
         }
     }

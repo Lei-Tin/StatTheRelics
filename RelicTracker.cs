@@ -8,6 +8,8 @@ using System.Diagnostics;
 using HarmonyLib;
 using System.Threading.Tasks;
 using System.Threading;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Models;
 using StatTheRelics.RelicStats;
 using StatTheRelics;
 
@@ -27,11 +29,35 @@ public static class RelicTracker {
     static volatile bool rawDisplayMode;
 
     public static RelicData? GetOrCreate(object? relic) {
-        var instanceKey = GetInstanceKey(relic);
+        return GetOrCreate(relic, null);
+    }
+
+    public static RelicData? GetOrCreateForOwner(object? relic, Player? owner) {
+        return GetOrCreate(relic, owner);
+    }
+
+    static RelicData? GetOrCreate(object? relic, Player? ownerOverride) {
+        var typeKey = GetTypeKey(relic);
+        if (typeKey == null) return null;
+        var instanceKey = GetInstanceKey(relic, ownerOverride);
         if (instanceKey == null) return null;
         return dataByType.GetOrAdd(instanceKey, _ => {
             var rd = new RelicData();
-            var defaults = RelicStatsRegistry.GetDefaultCounters(instanceKey);
+            var defaults = RelicStatsRegistry.GetDefaultCounters(typeKey);
+            if (!string.Equals(instanceKey, typeKey, StringComparison.Ordinal)
+                && dataByType.TryGetValue(typeKey, out var legacy)) {
+                foreach (var counter in legacy.Counters) {
+                    // Do not migrate the old generic Flash counter into a
+                    // relic whose current definition tracks different stats.
+                    if (string.Equals(counter.Key, "Flashes", StringComparison.OrdinalIgnoreCase)
+                        && (defaults == null || !defaults.Any(key => string.Equals(key, "Flashes", StringComparison.OrdinalIgnoreCase)))) {
+                        continue;
+                    }
+                    rd.Counters[counter.Key] = counter.Value;
+                }
+                foreach (var textStat in legacy.TextStats) rd.TextStats[textStat.Key] = textStat.Value;
+            }
+
             if (defaults != null) {
                 foreach (var key in defaults) {
                     if (!string.IsNullOrWhiteSpace(key)) rd.Counters.TryAdd(key, 0);
@@ -60,36 +86,13 @@ public static class RelicTracker {
             var isMeltedRaw = ReflectionUtil.GetMemberValue(relic, "IsMelted");
             if (isMeltedRaw is bool isMelted && isMelted) return true;
 
-            var isUsedUpRaw = ReflectionUtil.GetMemberValue(relic, "IsUsedUp");
-            if (isUsedUpRaw is bool isUsedUp && isUsedUp) return true;
+            var removedRaw = ReflectionUtil.GetMemberValue(relic, "HasBeenRemovedFromState");
+            if (removedRaw is bool removed && removed) return true;
 
             return false;
         } catch {
             return false;
         }
-    }
-
-    public static void AddAmountByType(string relicTypeName, string key, int amount) {
-        try {
-            MaybeRestoreLiveAfterHistory();
-            if (string.IsNullOrWhiteSpace(relicTypeName)) return;
-            if (string.IsNullOrWhiteSpace(key)) return;
-            if (amount == 0) return;
-            if (relicTypeName.IndexOf(relicNamespaceToken, StringComparison.OrdinalIgnoreCase) < 0) return;
-
-            var d = dataByType.GetOrAdd(relicTypeName, _ => {
-                var rd = new RelicData();
-                var defaults = RelicStatsRegistry.GetDefaultCounters(relicTypeName);
-                if (defaults != null) {
-                    foreach (var defaultKey in defaults) {
-                        if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
-                    }
-                }
-                return rd;
-            });
-
-            d.Counters.AddOrUpdate(key, amount, (_, old) => old + amount);
-        } catch { }
     }
 
     public static void SetText(object relic, string key, string value) {
@@ -107,36 +110,12 @@ public static class RelicTracker {
         } catch { }
     }
 
-    public static void SetTextByType(string relicTypeName, string key, string value) {
-        try {
-            MaybeRestoreLiveAfterHistory();
-            if (string.IsNullOrWhiteSpace(relicTypeName)) return;
-            if (string.IsNullOrWhiteSpace(key)) return;
-            if (string.IsNullOrWhiteSpace(value)) return;
-            if (relicTypeName.IndexOf(relicNamespaceToken, StringComparison.OrdinalIgnoreCase) < 0) return;
-
-            var d = dataByType.GetOrAdd(relicTypeName, _ => {
-                var rd = new RelicData();
-                var defaults = RelicStatsRegistry.GetDefaultCounters(relicTypeName);
-                if (defaults != null) {
-                    foreach (var defaultKey in defaults) {
-                        if (!string.IsNullOrWhiteSpace(defaultKey)) rd.Counters.TryAdd(defaultKey, 0);
-                    }
-                }
-                return rd;
-            });
-
-            d.TextStats[key] = value;
-        } catch { }
-    }
-
     public static string? GetText(object relic, string key) {
         try {
             if (relic == null) return null;
             if (string.IsNullOrWhiteSpace(key)) return null;
-            var instanceKey = GetInstanceKey(relic);
-            if (instanceKey == null) return null;
-            if (!dataByType.TryGetValue(instanceKey, out var d) || d == null) return null;
+            var typeKey = GetTypeKey(relic);
+            if (typeKey == null || !TryGetDataForRelic(dataByType, relic, typeKey, out var d) || d == null) return null;
             return d.TextStats.TryGetValue(key, out var value) ? FormatStoredTextValue(value) : null;
         } catch { return null; }
     }
@@ -144,26 +123,8 @@ public static class RelicTracker {
     public static string? GetStoredText(object relic, string key) {
         try {
             if (relic == null || string.IsNullOrWhiteSpace(key)) return null;
-            var instanceKey = GetInstanceKey(relic);
-            if (instanceKey == null) return null;
-            if (!dataByType.TryGetValue(instanceKey, out var d) || d == null) return null;
-            return d.TextStats.TryGetValue(key, out var value) ? value : null;
-        } catch { return null; }
-    }
-
-    public static string? GetTextByType(string relicTypeName, string key) {
-        try {
-            if (string.IsNullOrWhiteSpace(relicTypeName)) return null;
-            if (string.IsNullOrWhiteSpace(key)) return null;
-            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return null;
-            return d.TextStats.TryGetValue(key, out var value) ? FormatStoredTextValue(value) : null;
-        } catch { return null; }
-    }
-
-    public static string? GetStoredTextByType(string relicTypeName, string key) {
-        try {
-            if (string.IsNullOrWhiteSpace(relicTypeName) || string.IsNullOrWhiteSpace(key)) return null;
-            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return null;
+            var typeKey = GetTypeKey(relic);
+            if (typeKey == null || !TryGetDataForRelic(dataByType, relic, typeKey, out var d) || d == null) return null;
             return d.TextStats.TryGetValue(key, out var value) ? value : null;
         } catch { return null; }
     }
@@ -178,20 +139,13 @@ public static class RelicTracker {
         return result;
     }
 
-    public static int GetCounterByType(string relicTypeName, string key) {
+    public static int GetCounter(object? relic, string key) {
         try {
-            if (string.IsNullOrWhiteSpace(relicTypeName)) return 0;
-            if (string.IsNullOrWhiteSpace(key)) return 0;
-            if (!dataByType.TryGetValue(relicTypeName, out var d) || d == null) return 0;
+            if (relic == null || string.IsNullOrWhiteSpace(key)) return 0;
+            var typeKey = GetTypeKey(relic);
+            if (typeKey == null || !TryGetDataForRelic(dataByType, relic, typeKey, out var d) || d == null) return 0;
             return d.Counters.TryGetValue(key, out var value) ? value : 0;
         } catch { return 0; }
-    }
-
-    public static bool HasTrackedRelicType(string relicTypeName) {
-        try {
-            if (string.IsNullOrWhiteSpace(relicTypeName)) return false;
-            return dataByType.ContainsKey(relicTypeName);
-        } catch { return false; }
     }
 
     public static void StartNewRunSession(string reason = "start") {
@@ -238,9 +192,9 @@ public static class RelicTracker {
             if (!runActive && !historyMode) return string.Empty;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return string.Empty;
-            if (!string.IsNullOrWhiteSpace(tooltipOverrideNote)) {
-                return FormatWithHeader(Localization.TranslateTooltip(tooltipOverrideNote));
-            }
+            // A missing history sidecar means this run was never tracked by the mod.
+            // Leave those relic tooltips untouched instead of showing an error-like placeholder.
+            if (!string.IsNullOrWhiteSpace(tooltipOverrideNote)) return string.Empty;
 
             RelicData? d;
             if (historyMode) {
@@ -427,6 +381,14 @@ public static class RelicTracker {
     internal static bool CurrentStatsUnavailable => !string.IsNullOrWhiteSpace(tooltipOverrideNote);
     internal static bool RawDisplayMode => rawDisplayMode;
 
+    internal static void ResumeLiveModePreservingData(string note, bool statsUnavailable, bool rawDisplay) {
+        bannerNote = rawDisplay ? (note ?? string.Empty) : string.Empty;
+        tooltipOverrideNote = statsUnavailable ? (note ?? string.Empty) : string.Empty;
+        rawDisplayMode = rawDisplay;
+        runActive = true;
+        historyMode = false;
+    }
+
     public static class RelicPatches {
         public static void ApplyDynamicPatches(Harmony harmony) {
             try {
@@ -459,11 +421,11 @@ public static class RelicTracker {
                 var tk = GetTypeKey(__instance);
                 if (tk == null) return;
                 var def = RelicStatsRegistry.GetDefinition(tk);
-                if (!RelicStatsRegistry.IsImplementationChanged(tk) && def != null) {
-                    var hasFlash = def.DefaultCounters?.Any(c => string.Equals(c, "Flashes", StringComparison.OrdinalIgnoreCase)) == true;
-                    if (!hasFlash) return;
-                }
-                AddAmountByType(tk, "Flashes", 1);
+                // Generic Flash statistics are reserved for relics without a
+                // dedicated definition, or whose dedicated patch group failed
+                // and was explicitly put into the generic fallback mode.
+                if (def != null && !RelicStatsRegistry.IsImplementationChanged(tk)) return;
+                AddAmount(__instance, "Flashes", 1);
             } catch { }
         }
 
@@ -478,17 +440,22 @@ public static class RelicTracker {
     }
 
     static readonly string relicNamespaceToken = ".Relics";
+    const string ownerKeySeparator = "|player:";
+
     static bool TryGetDataForRelic(ConcurrentDictionary<string, RelicData> source, object? relic, string typeKey, out RelicData? data) {
         data = null;
+        var instanceKey = GetInstanceKey(relic);
+        if (instanceKey != null && source.TryGetValue(instanceKey, out data)) return true;
         return source.TryGetValue(typeKey, out data);
     }
 
-    static string? GetInstanceKey(object? relic) {
+    static string? GetInstanceKey(object? relic, Player? ownerOverride = null) {
         try {
             if (relic == null) return null;
             var typeKey = GetTypeKey(relic);
             if (typeKey == null) return null;
-            return typeKey;
+            var owner = ownerOverride ?? (relic as RelicModel)?.Owner;
+            return owner == null ? typeKey : typeKey + ownerKeySeparator + owner.NetId;
         } catch {
             return GetTypeKey(relic);
         }

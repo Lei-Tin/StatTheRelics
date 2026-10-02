@@ -1,18 +1,28 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace StatTheRelics.Patches;
 
-// Hook the actual run creation, not log lines, to start a new counter session.
-[HarmonyPatch(typeof(Player), nameof(Player.CreateForNewRun), new System.Type[] { typeof(CharacterModel), typeof(MegaCrit.Sts2.Core.Unlocks.UnlockState), typeof(ulong) })]
+// Initialize one tracking session for the whole run. Player.CreateForNewRun is
+// called once per player and is also reused by Run History.
+[HarmonyPatch(typeof(RunManager), "InitializeNewRun")]
 public static class RunStartPatch {
-    static void Postfix(Player __result) {
+    static void Prefix() {
         try {
-            if (RelicTracker.IsHistoryStack()) return;
-            RelicTracker.StartNewRunSession("CreateForNewRun");
-            if (__result?.Relics == null) return;
-            foreach (var relic in __result.Relics) RelicTracker.GetOrCreate(relic);
+            RelicTracker.StartNewRunSession("InitializeNewRun");
+        } catch { }
+    }
+
+    static void Postfix(RunManager __instance) {
+        try {
+            var state = ReflectionUtil.GetMemberValue(__instance, "State");
+            if (ReflectionUtil.GetMemberValue(state, "Players") is not IEnumerable<Player> players) return;
+            foreach (var player in players) {
+                if (player?.Relics == null) continue;
+                foreach (var relic in player.Relics) RelicTracker.GetOrCreate(relic);
+            }
         } catch { }
     }
 }

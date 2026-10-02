@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
 
@@ -17,7 +18,7 @@ namespace StatTheRelics.Patches.Relics {
         const string TypeName = "MegaCrit.Sts2.Core.Models.Relics.TriBoomerang";
         const string CardsEnchantedKey = "Cards Enchanted";
         static readonly ConditionalWeakTable<CardModel, object> EnchantedCards = new();
-        static readonly HashSet<string> EnchantedCardNames = new(StringComparer.Ordinal);
+        static readonly ConditionalWeakTable<Player, HashSet<string>> EnchantedCardNames = new();
         static readonly object Marker = new();
 
         static void Prefix(TriBoomerang __instance, ref object __state) {
@@ -59,7 +60,9 @@ namespace StatTheRelics.Patches.Relics {
                     var name = DeckUtil.GetCardStorageValue(card);
                     if (!string.IsNullOrWhiteSpace(name)) names.Add(name);
                     if (card is CardModel cardModel && !EnchantedCards.TryGetValue(cardModel, out _)) EnchantedCards.Add(cardModel, Marker);
-                    if (card is CardModel matchCard) EnchantedCardNames.Add(DeckUtil.GetCardCodeName(matchCard));
+                    if (card is CardModel matchCard && relic.Owner != null) {
+                        EnchantedCardNames.GetOrCreateValue(relic.Owner).Add(DeckUtil.GetCardCodeName(matchCard));
+                    }
                 }
 
                 if (names.Count <= 0) return;
@@ -71,10 +74,16 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountPlayed(CardModel card) {
             try {
                 if (card == null) return;
-                if (!RelicTracker.HasTrackedRelicType(TypeName)) return;
+                var relic = ReflectionUtil.FindRelic<TriBoomerang>(card.Owner);
+                if (relic == null) return;
                 if (ReflectionUtil.GetMemberValue(card, "Enchantment") == null) return;
-                if (!EnchantedCards.TryGetValue(card, out _) && !EnchantedCardNames.Contains(DeckUtil.GetCardCodeName(card))) return;
-                RelicTracker.AddAmountByType(TypeName, "Enchanted Cards Played", 1);
+                var trackedCard = card.DeckVersion ?? card;
+                var trackedByInstance = EnchantedCards.TryGetValue(trackedCard, out _);
+                var trackedByOwner = card.Owner != null
+                    && EnchantedCardNames.TryGetValue(card.Owner, out var names)
+                    && names.Contains(DeckUtil.GetCardCodeName(card));
+                if (!trackedByInstance && !trackedByOwner) return;
+                RelicTracker.AddAmount(relic, "Enchanted Cards Played", 1);
             } catch { }
         }
     }

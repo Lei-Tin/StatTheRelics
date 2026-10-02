@@ -72,7 +72,7 @@ namespace StatTheRelics.Patches.Relics {
                     state.OfferNames.Add(name);
                 }
 
-                if (state.OfferNames.Count > 0) RelicTracker.SetTextByType(SilkenTressPatch.TypeName, "Card Rewards", DeckUtil.JoinCardList(state.OfferNames));
+                if (state.OfferNames.Count > 0) RelicTracker.SetText(state.Relic, "Card Rewards", DeckUtil.JoinCardList(state.OfferNames));
                 return state.ModifiedOffers.Count > 0 ? state : null;
             } catch {
                 return null;
@@ -120,8 +120,8 @@ namespace StatTheRelics.Patches.Relics {
         internal static void AppendCard(SilkenTress relic, string key, string value) {
             if (string.IsNullOrWhiteSpace(value)) return;
             lock (Sync) {
-                var current = RelicTracker.GetStoredTextByType(SilkenTressPatch.TypeName, key);
-                RelicTracker.SetTextByType(SilkenTressPatch.TypeName, key, DeckUtil.AppendCardStorageValue(current, value));
+                var current = RelicTracker.GetStoredText(relic, key);
+                RelicTracker.SetText(relic, key, DeckUtil.AppendCardStorageValue(current, value));
             }
         }
     }

@@ -69,10 +69,11 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(CardModel __instance) {
             try {
                 if (__instance == null) return;
-                if (!RelicTracker.HasTrackedRelicType(DistinguishedCapePatch.TypeName)) return;
                 if (!DistinguishedCapePatch.IsApparition(__instance)) return;
+                var relic = ReflectionUtil.FindRelic<DistinguishedCape>(__instance.Owner);
+                if (relic == null) return;
 
-                RelicTracker.AddAmountByType(DistinguishedCapePatch.TypeName, "Apparitions Played", 1);
+                RelicTracker.AddAmount(relic, "Apparitions Played", 1);
             } catch { }
         }
     }

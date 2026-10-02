@@ -53,17 +53,14 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountPlayed(CardModel card) {
             try {
                 if (card == null) return;
-                if (!RelicTracker.HasTrackedRelicType(TypeName)) return;
+                var relic = ReflectionUtil.FindRelic<NutritiousSoup>(card.Owner);
+                if (relic == null) return;
                 if (!IsBasicStrike(card)) return;
                 if (!IsEnchantedAndActive(card)) return;
-                if (!SoupStrikes.TryGetValue(card, out _) && !CanUseReloadFallback()) return;
+                if (!SoupStrikes.TryGetValue(card, out _) && RelicTracker.GetCounter(relic, "Strikes Enchanted") <= 0) return;
 
-                RelicTracker.AddAmountByType(TypeName, "Enchanted Strikes Played", 1);
+                RelicTracker.AddAmount(relic, "Enchanted Strikes Played", 1);
             } catch { }
-        }
-
-        static bool CanUseReloadFallback() {
-            return RelicTracker.GetCounterByType(TypeName, "Strikes Enchanted") > 0;
         }
 
         static bool IsBasicStrike(CardModel card) {

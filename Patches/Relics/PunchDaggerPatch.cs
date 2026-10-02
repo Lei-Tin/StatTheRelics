@@ -55,13 +55,14 @@ namespace StatTheRelics.Patches.Relics {
         internal static void CountPlayed(CardModel card) {
             try {
                 if (card == null) return;
-                if (!RelicTracker.HasTrackedRelicType(TypeName)) return;
                 if (!IsMomentumAndActive(card)) return;
+                var relic = ReflectionUtil.FindRelic<PunchDagger>(card.Owner);
+                if (relic == null) return;
 
-                var tracked = RelicTracker.GetStoredTextByType(TypeName, EnchantedCardsKey);
+                var tracked = RelicTracker.GetStoredText(relic, EnchantedCardsKey);
                 if (!DeckUtil.StoredCardListContains(tracked, card)) return;
 
-                RelicTracker.AddAmountByType(TypeName, "Enchanted Cards Played", 1);
+                RelicTracker.AddAmount(relic, "Enchanted Cards Played", 1);
             } catch { }
         }
 

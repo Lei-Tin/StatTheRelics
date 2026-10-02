@@ -63,11 +63,11 @@ namespace StatTheRelics.Patches.Relics {
                 var trackedCard = card.DeckVersion ?? card;
                 var trackedThisSession = TrackedCards.TryGetValue(trackedCard, out _);
                 if (!trackedThisSession) {
-                    var stored = RelicTracker.GetStoredTextByType(BeautifulBraceletTypeName, TrackedSwiftCardsDisplayKey);
+                    var stored = RelicTracker.GetStoredText(relic, TrackedSwiftCardsDisplayKey);
                     if (!DeckUtil.StoredCardListContains(stored, card, matchOccurrence: true)) return false;
                 }
 
-                RelicTracker.AddAmountByType(BeautifulBraceletTypeName, "Swift Cards Played", 1);
+                RelicTracker.AddAmount(relic, "Swift Cards Played", 1);
                 return true;
             } catch {
                 return false;
@@ -127,7 +127,6 @@ namespace StatTheRelics.Patches.Relics {
             try {
                 var card = __instance?.Card;
                 if (card == null) return;
-                if (!RelicTracker.HasTrackedRelicType(BeautifulBraceletSwiftTracker.BeautifulBraceletTypeName)) return;
                 BeautifulBraceletSwiftTracker.TryCountTrackedSwiftCardPlay(card);
             } catch { }
         }

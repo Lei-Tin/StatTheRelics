@@ -25,13 +25,13 @@ namespace StatTheRelics.Patches.Relics {
                 if (__state is not State state || state.DazedAdded <= 0) return;
 
                 if (__result == null) {
-                    RelicTracker.AddAmountByType(TypeName, "Dazed Added", state.DazedAdded);
+                    RelicTracker.AddAmount(__instance, "Dazed Added", state.DazedAdded);
                     return;
                 }
 
                 __result.ContinueWith(task => {
                     try {
-                        if (task.Status == TaskStatus.RanToCompletion) RelicTracker.AddAmountByType(TypeName, "Dazed Added", state.DazedAdded);
+                        if (task.Status == TaskStatus.RanToCompletion) RelicTracker.AddAmount(__instance, "Dazed Added", state.DazedAdded);
                     } catch { }
                 });
             } catch { }
