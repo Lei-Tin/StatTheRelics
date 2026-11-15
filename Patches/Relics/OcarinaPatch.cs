@@ -14,6 +14,7 @@ namespace StatTheRelics.Patches.Relics {
         [ThreadStatic] internal static Ocarina? Current;
 
         static void Prefix(Ocarina __instance, Player player) {
+            Current = null;
             if (player == __instance.Owner && player.PlayerCombatState?.TurnNumber is <= 1) Current = __instance;
         }
 
@@ -29,10 +30,14 @@ namespace StatTheRelics.Patches.Relics {
                 __result.ContinueWith(task => {
                     try {
                         if (task.Status != TaskStatus.RanToCompletion) return;
-                        var count = task.Result.Count(result => result.success);
-                        if (count > 0) RelicTracker.AddAmount(relic, "Cards Generated", count);
+                        foreach (var result in task.Result) {
+                            if (!result.success || result.cardAdded == null) continue;
+                            if (result.cardAdded.Tags.Contains(CardTag.Wah)) RelicTracker.AddAmount(relic, "Wah Cards Generated", 1);
+                            if (result.cardAdded.Tags.Contains(CardTag.Cho)) RelicTracker.AddAmount(relic, "Cho Cards Generated", 1);
+                            if (result.cardAdded.Tags.Contains(CardTag.Ki)) RelicTracker.AddAmount(relic, "Ki Cards Generated", 1);
+                        }
                     } catch { }
-                });
+                }, TaskContinuationOptions.ExecuteSynchronously);
             } catch { }
         }
     }

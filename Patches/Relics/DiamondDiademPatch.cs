@@ -111,6 +111,7 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(object __instance, Creature target, decimal amount, decimal __result) {
             try {
                 if (__instance == null || target == null || __result >= 1m) return;
+                if (MightyWingsDamagePatch.Calculating || ConductorsBatonPatch.Calculating) return;
                 if (!ReferenceEquals(target, ReflectionUtil.GetMemberValue(__instance, "Owner"))) return;
                 if (!IsFromCreatureDamageCommand()) return;
 

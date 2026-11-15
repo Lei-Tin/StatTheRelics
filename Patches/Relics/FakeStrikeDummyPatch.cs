@@ -12,6 +12,7 @@ namespace StatTheRelics.Patches.Relics {
         static void Postfix(FakeStrikeDummy __instance, Creature target, decimal amount, ValueProp props, Creature dealer, CardModel cardSource, decimal __result) {
             try {
                 if (__instance == null || __result <= 0) return;
+                if (MightyWingsDamagePatch.Calculating || ConductorsBatonPatch.Calculating) return;
                 if (!IsFromCreatureDamageCommand()) return;
 
                 var bonus = Math.Max(0, Convert.ToInt32(__result));
