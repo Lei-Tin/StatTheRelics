@@ -95,7 +95,7 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(MerchantCardEntry), "OnTryPurchase", new Type[] {
+    [HarmonyPatch(typeof(MerchantCardEntry), "OnTryPurchaseInternal", new Type[] {
         typeof(MerchantInventory),
         typeof(bool)
     })]

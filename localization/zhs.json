@@ -4,7 +4,7 @@
   "1 Cost": "1费牌",
   "2 Cost": "2费牌",
   "3 Cost": "3费牌",
-  "Abundance Played": "打出的丰饶",
+  "Abundance Played": "打出的富足",
   "Added Cards Taken": "拿取的额外卡牌",
   "Apotheosis Played": "打出的神化",
   "Apparitions Played": "打出的灵体",
@@ -170,5 +170,12 @@
   "Whistle Played": "打出的吹哨",
   "Wishes Played": "打出的许愿",
   "X Cards Played": "打出的X费牌",
-  "X Value Added": "增加的X值"
+  "X Value Added": "增加的X值",
+  "Aim Gained": "获得的瞄准",
+  "Damage Reduction Activations": "减伤触发次数",
+  "Extra Hits Added": "增加的攻击段数",
+  "God Byrds Played": "打出的异鸟猛击",
+  "Stretch Gained": "获得的拉伸",
+  "Box 1": "第1盒",
+  "Box 2": "第2盒"
 }

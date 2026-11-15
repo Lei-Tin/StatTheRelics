@@ -43,7 +43,7 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(MerchantEntry), nameof(MerchantEntry.OnTryPurchaseWrapper), new Type[] {
+    [HarmonyPatch(typeof(MerchantEntry), nameof(MerchantEntry.OnTryPurchaseUnsynchronized), new Type[] {
         typeof(MerchantInventory),
         typeof(bool)
     })]
@@ -53,39 +53,6 @@ namespace StatTheRelics.Patches.Relics {
         }
 
         static void Prefix(MerchantEntry __instance, ref object __state) {
-            try {
-                __state = new PurchaseState { Entry = __instance };
-            } catch { }
-        }
-
-        static void Postfix(Task<bool> __result, object __state) {
-            try {
-                var state = __state as PurchaseState;
-                if (state?.Entry == null || __result == null) return;
-
-                __result.ContinueWith(task => {
-                    try {
-                        if (task.Status != TaskStatus.RanToCompletion || !task.Result) return;
-                        var discount = MembershipCardPatch.TakeDiscount(state.Entry);
-                        if (discount?.Relic == null || discount.Saved <= 0) return;
-                        RelicTracker.AddAmount(discount.Relic, "Gold Saved", discount.Saved);
-                    } catch { }
-                });
-            } catch { }
-        }
-    }
-
-    [HarmonyPatch(typeof(MerchantCardRemovalEntry), nameof(MerchantCardRemovalEntry.OnTryPurchaseWrapper), new Type[] {
-        typeof(MerchantInventory),
-        typeof(bool),
-        typeof(bool)
-    })]
-    public static class MembershipCardRemovalEntryPatch {
-        class PurchaseState {
-            public MerchantEntry? Entry { get; set; }
-        }
-
-        static void Prefix(MerchantCardRemovalEntry __instance, ref object __state) {
             try {
                 __state = new PurchaseState { Entry = __instance };
             } catch { }

@@ -44,31 +44,19 @@ namespace StatTheRelics.Patches.Relics {
     }
 
     [HarmonyPatch]
-    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))]
-    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay))]
-    public static class PenNibSingleDecimalDamagePatch {
-        static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
-            typeof(CreatureCmd),
-            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay)),
-            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(Creature), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))
-        );
-
-        static void Postfix(decimal amount, CardModel cardSource, Task<IEnumerable<DamageResult>> __result) {
-            PenNibPatch.CountBonus(PenNibPatch.GetActiveRelic(cardSource), amount, __result);
-        }
-    }
-
-    [HarmonyPatch]
     [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))]
+    [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<DamageTargetData>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay), typeof(MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType))]
     [PatchTargetAlternative(typeof(CreatureCmd), nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay))]
     public static class PenNibManyDecimalDamagePatch {
         static MethodBase TargetMethod() => PatchTargetResolver.RequireAny(
             typeof(CreatureCmd),
+            new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<DamageTargetData>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay), typeof(MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType)),
             new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay)),
             new PatchTargetCandidate(nameof(CreatureCmd.Damage), typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel))
         );
 
-        static void Postfix(decimal amount, CardModel cardSource, Task<IEnumerable<DamageResult>> __result) {
+        static void Postfix(decimal amount, CardModel cardSource, MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType modifyDamageHookType, Task<IEnumerable<DamageResult>> __result) {
+            if ((modifyDamageHookType & MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType.Multiplicative) == 0) return;
             PenNibPatch.CountBonus(PenNibPatch.GetActiveRelic(cardSource), amount, __result);
         }
     }

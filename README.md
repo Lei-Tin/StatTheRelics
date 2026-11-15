@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It appends usage data to relic tooltips and saves that data alongside run saves and run history.
 
-Current version: `1.0.8`
+Current version: `1.0.9`
 
 [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122)
 
@@ -56,7 +56,20 @@ Run-history views display the last compatible saved snapshot. Relic Collection a
 
 Stat snapshots include the Mod version and game build. After an update, older snapshots remain readable under an archived-stats header without applying the current relic implementation. Stored card and relic references are resolved using the current game language; new counters or renamed fields are not inferred retroactively.
 
-Slay the Spire 2 is in active development and game updates can change its Mod API. Version `1.0.8` supports stable `v0.107.1` and public beta `v0.110.1`; later game updates may require a matching Mod update.
+### Supported versions
+
+| Game version | Mod version | Support status |
+| --- | --- | --- |
+| `v0.113.1` | `1.0.9` | Current target; build, relic coverage and Harmony mounting checks passed. |
+| `v0.110.1` | `1.0.8` | Supported by the previous release; not retested in this update. |
+| `v0.107.1` | `1.0.8` | Supported by the previous release; not retested in this update. |
+| Other game versions | — | Not verified; compatibility is not guaranteed. |
+
+Mod `1.0.9` requires game `v0.113.1` and does not support `v0.107.1` or `v0.110.1`. Its manifest declares `min_game_version: 0.113.1`; this is a lower bound for the loader, not a promise that every newer game build works. Full in-game combat, merchant UI and save/load testing has not been performed for this release.
+
+Existing patch alternatives and optional hooks handle specific API differences. They do not make this DLL backward-compatible with games that lack its referenced relic types. Use the matching Mod release in the table rather than lowering the manifest's minimum version.
+
+Saved-stat compatibility is separate from DLL compatibility: snapshots from another Mod/game build can be displayed as archived, original values. They are not migrated to current relic behavior or used to reconstruct missing counters.
 
 The game keeps modded and unmodded saves separately. Switching back to an unmodded launch can therefore show different progress; it does not mean that Stat The Relics deleted a save. Recent game versions copy unmodded progress when creating the modded save for the first time, as described in the official [Major Update #2 notes](https://steamcommunity.com/ogg/2868840/announcements/detail/710026912607505281).
 
@@ -100,8 +113,8 @@ Create `local.props` in the project root:
     <ModDisplayName>Stat The Relics</ModDisplayName>
     <ModDescription>Displays stats for the various relics found in the spire</ModDescription>
     <ModAuthor>LeiT</ModAuthor>
-    <ModVersion>1.0.8</ModVersion>
-    <MinGameVersion>0.107.1</MinGameVersion>
+    <ModVersion>1.0.9</ModVersion>
+    <MinGameVersion>0.113.1</MinGameVersion>
   </PropertyGroup>
 </Project>
 ```
@@ -117,3 +130,5 @@ The build generates the Godot project metadata, exports the PCK, copies the DLL,
 ## Game Update Checks
 
 `tools/InspectRelics.csproj` validates Harmony targets and checks that every game relic has a generated stats definition. The versioned files under [Compatibility](./Compatibility) also fingerprint normalized relic IL, including async state machines, so implementation changes can be reviewed even when method signatures stay the same.
+
+See the [v0.113.1 compatibility review](./Compatibility/relic-review-v0.113.1.md) for the full change list, affected shared APIs, added relic counters, and validation results.

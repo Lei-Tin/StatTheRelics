@@ -16,7 +16,7 @@ namespace StatTheRelics.Patches.Relics {
             public CardType CardType { get; set; }
         }
 
-        static void Prefix(BurningSticks __instance, PlayerChoiceContext choiceContext, CardModel card, bool causedByEthereal, ref object __state) {
+        static void Prefix(BurningSticks __instance, PlayerChoiceContext choiceContext, CardModel card, bool __2, ref object __state) {
             try {
                 var wasUsed = GetWasUsedThisCombat(__instance);
                 var shouldTrigger = __instance != null
@@ -65,7 +65,7 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    // Count the actual Burning Sticks trigger: the relic marks itself used only after adding the cloned card.
+    // Count the Burning Sticks activation when the relic marks itself used.
     [HarmonyPatch(typeof(BurningSticks), "WasUsedThisCombat", MethodType.Setter)]
     public static class BurningSticksWasUsedSetterPatch {
         static void Prefix(BurningSticks __instance, bool value, ref object __state) {

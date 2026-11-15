@@ -64,7 +64,7 @@ namespace StatTheRelics.Patches.Relics {
         }
     }
 
-    [HarmonyPatch(typeof(MerchantEntry), nameof(MerchantEntry.OnTryPurchaseWrapper), new Type[] {
+    [HarmonyPatch(typeof(MerchantEntry), nameof(MerchantEntry.OnTryPurchaseUnsynchronized), new Type[] {
         typeof(MerchantInventory),
         typeof(bool)
     })]
@@ -77,7 +77,7 @@ namespace StatTheRelics.Patches.Relics {
         static void Prefix(MerchantEntry __instance, ref object __state) {
             try {
                 var relic = LordsParasolPatch.ActiveRelic;
-                if (relic == null) return;
+                if (relic == null || __instance.Player != relic.Owner) return;
                 __state = new PurchaseState { Relic = relic, Cost = Math.Max(0, __instance.Cost) };
             } catch { }
         }
@@ -91,41 +91,6 @@ namespace StatTheRelics.Patches.Relics {
                     try {
                         if (task.Status == TaskStatus.RanToCompletion && task.Result) {
                             LordsParasolPatch.CountPurchase(state.Relic, state.Cost);
-                        }
-                    } catch { }
-                });
-            } catch { }
-        }
-    }
-
-    [HarmonyPatch(typeof(MerchantCardRemovalEntry), nameof(MerchantCardRemovalEntry.OnTryPurchaseWrapper), new Type[] {
-        typeof(MerchantInventory),
-        typeof(bool),
-        typeof(bool)
-    })]
-    public static class LordsParasolCardRemovalPatch {
-        class PurchaseState {
-            public LordsParasol? Relic { get; set; }
-            public int Cost { get; set; }
-        }
-
-        static void Prefix(MerchantCardRemovalEntry __instance, ref object __state) {
-            try {
-                var relic = LordsParasolPatch.ActiveRelic;
-                if (relic == null) return;
-                __state = new PurchaseState { Relic = relic, Cost = Math.Max(0, __instance.Cost) };
-            } catch { }
-        }
-
-        static void Postfix(Task<bool> __result, object __state) {
-            try {
-                var state = __state as PurchaseState;
-                if (state?.Relic == null || __result == null) return;
-
-                __result.ContinueWith(task => {
-                    try {
-                        if (task.Status == TaskStatus.RanToCompletion && task.Result) {
-                            LordsParasolPatch.CountRemoval(state.Relic, state.Cost);
                         }
                     } catch { }
                 });

@@ -61,7 +61,7 @@ namespace StatTheRelics.Patches.Relics {
                 var count = 0;
                 var ownerCreature = relic.Owner?.Creature;
                 foreach (var creature in creatures) {
-                    if (creature == null || creature == ownerCreature) continue;
+                    if (creature == null || !creature.IsEnemy) continue;
                     if (!AllPowersAllowFatalTrigger(creature)) continue;
                     count++;
                 }

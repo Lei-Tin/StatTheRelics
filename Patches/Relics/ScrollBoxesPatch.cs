@@ -88,7 +88,8 @@ namespace StatTheRelics.Patches.Relics {
 
     [HarmonyPatch(typeof(CardSelectCmd), nameof(CardSelectCmd.FromChooseABundleScreen), new Type[] {
         typeof(Player),
-        typeof(IReadOnlyList<IReadOnlyList<CardModel>>)
+        typeof(IReadOnlyList<IReadOnlyList<CardModel>>),
+        typeof(bool)
     })]
     public static class ScrollBoxesChooseBundlePatch {
         static void Postfix(Player player, Task<IEnumerable<CardModel>> __result) {

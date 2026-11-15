@@ -15,6 +15,7 @@ namespace StatTheRelics.Patches.Relics {
         static void Prefix(Regalite __instance, CardModel card, Player creator, ref object __state) {
             try {
                 if (__instance == null || creator == null || __instance.Owner != creator) return;
+                if (ReflectionUtil.GetMemberValue(__instance, "UsedThisTurn") is true) return;
                 __state = new State {
                     Block = Math.Max(0, ReflectionUtil.GetDynamicVarIntValue(__instance, "Block", 2))
                 };
