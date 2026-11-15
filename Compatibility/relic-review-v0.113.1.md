@@ -52,7 +52,7 @@ The implementation follows the existing independent per-relic Prefix/Postfix and
 | `BathTowel` | HP Healed |
 | `BizarreLamp` | Cards Generated |
 | `Byrdine` | God Byrds Played |
-| `ConductorsBaton` | HP Saved (after block, using the reduction's actual rounding and damage caps) |
+| `ConductorsBaton` | Damage Mitigated (before Wuppy redirection and block, including rounding and damage caps) |
 | `ExerciseMat` | Stretch Gained |
 | `Fertilizer` | Strength Gained |
 | `MightyWings` | Strength Gained; Extra Damage Dealt from this relic's strength in the current combat |
@@ -77,7 +77,7 @@ Healing uses before/after HP snapshots. Buff and block counters follow the exist
 - Core damage routing: all six affected groups patch the DamageTargetData core exactly once.
 - Cross-version saved-stat logic: 13 version/build cases passed using the production persistence source with an in-memory test store. Mismatched snapshots keep their original counters, text and provenance when loaded and re-saved; history uses archived display. This does not test running the current DLL on older game binaries.
 - English/Simplified Chinese: 186 matching nonblank entries with valid placeholders/tags; all 317 formatters passed 3,804 live/history/zero/populated output checks under eng -> zhs -> eng, including fallback and version banners. Official game PCK terms checked; Stretch, God Byrd, Abundance and Wah/Cho/Ki Chinese labels corrected, and ScrollBoxes Box 1/2 headings translated. Both packaged language files match the checked sources.
-- Manual-test feedback regression: 239 assertions passed with the production patch files linked into deterministic settlement fixtures. Cases cover repeated previews, Exterminate's fifth hit, early kills, Wuppy initialization/healing/overkill, asynchronous melody generation, Weak/Vulnerable, damage caps, enchantments and unrelated modifier counters. These fixtures do not host Godot gameplay.
+- Manual-test feedback regression: 260 assertions passed with the production patch files linked into deterministic settlement fixtures. Cases cover repeated previews, Exterminate's fifth hit, early kills, Wuppy initialization/healing/overkill, asynchronous melody generation, Weak/Vulnerable, damage caps, enchantments and unrelated modifier counters. Baton mitigation includes damage saved for Wuppy and is counted before player block; Wuppy at 60/16/3/0 HP is covered. Bludgeon's first 32 damage grants 2 strength after the hit and has 0 bonus damage; a subsequent base-6 Strike deals 8 and credits 2 bonus damage. These fixtures do not host Godot gameplay.
 - Full Godot-hosted combat, merchant UI and save/load gameplay have not been exercised.
 
 ## Complete method fingerprint differences

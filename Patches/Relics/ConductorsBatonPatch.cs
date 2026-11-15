@@ -32,7 +32,6 @@ namespace StatTheRelics.Patches.Relics {
                     var target = data.target;
                     var relic = ReflectionUtil.FindRelic<ConductorsBaton>(target);
                     if (relic == null || target.IsDead || target.GetPower<ConductorsBatonPower>() == null) continue;
-                    var block = props.HasFlag(ValueProp.Unblockable) ? 0 : target.Block;
                     try {
                         Calculating = true;
                         var reduced = Hook.ModifyDamage(relic.Owner.RunState, target.CombatState, target, dealer, amount, props,
@@ -40,9 +39,9 @@ namespace StatTheRelics.Patches.Relics {
                         IgnoreReduction = true;
                         var original = Hook.ModifyDamage(relic.Owner.RunState, target.CombatState, target, dealer, amount, props,
                             cardSource, cardPlay, modifyDamageHookType, CardPreviewMode.None, out _);
-                        var saved = Math.Min(target.CurrentHp, Math.Max(0, (int)original - block))
-                            - Math.Min(target.CurrentHp, Math.Max(0, (int)reduced - block));
-                        if (saved > 0) __state[relic] = saved;
+                        // Damage reduction happens before Wuppy redirects it or player block absorbs it.
+                        var mitigated = Math.Max(0, (int)original - (int)reduced);
+                        if (mitigated > 0) __state[relic] = mitigated;
                     } finally {
                         IgnoreReduction = false;
                         Calculating = false;
@@ -58,7 +57,7 @@ namespace StatTheRelics.Patches.Relics {
                     if (task.Status != TaskStatus.RanToCompletion) return;
                     foreach (var pair in __state) {
                         if (task.Result.Any(result => result.OriginalTarget == pair.Key.Owner.Creature))
-                            RelicTracker.AddAmount(pair.Key, "HP Saved", pair.Value);
+                            RelicTracker.AddAmount(pair.Key, "Damage Mitigated", pair.Value);
                     }
                 } catch { }
             }, TaskContinuationOptions.ExecuteSynchronously);
