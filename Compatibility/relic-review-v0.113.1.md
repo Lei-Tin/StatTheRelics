@@ -55,7 +55,7 @@ The implementation follows the existing independent per-relic Prefix/Postfix and
 | `ConductorsBaton` | Damage Mitigated (before Wuppy redirection and block, including rounding and damage caps) |
 | `ExerciseMat` | Stretch Gained |
 | `Fertilizer` | Strength Gained |
-| `MightyWings` | Strength Gained; Extra Damage Dealt from this relic's strength in the current combat |
+| `MightyWings` | Strength Gained only, matching the other strength-granting relics |
 | `ObsidianVice` | Damage Dealt |
 | `Ocarina` | Wah / Cho / Ki Cards Generated, counted separately from successful generation results |
 | `SongBow` | Aim Gained |
@@ -66,18 +66,18 @@ The implementation follows the existing independent per-relic Prefix/Postfix and
 | `WhittlingKnife` | Aim Gained |
 | `Wuppy` | HP Blocked, counted from actual damage redirected to Wuppy (excluding initialization, healing and overkill) |
 
-Healing uses before/after HP snapshots. Buff and block counters follow the existing per-relic trigger conditions and dynamic values; generated-card and damage counters use their operation results. These are independent relic patches, with no shared effect-capture layer. The Baton and Wings use synchronous, per-relic comparison calculations only inside actual damage commands; comparison flags never cross an await. Two existing modifier counters skip these comparison calculations to avoid double counting. Wings' per-combat strength is saved with its counters and hidden from the tooltip. Polluted pre-fix Thumbscrew and Wuppy keys are not reused for the corrected metrics.
+Healing uses before/after HP snapshots. Buff and block counters follow the existing per-relic trigger conditions and dynamic values; generated-card and damage counters use their operation results. These are independent relic patches, with no shared effect-capture layer. The Baton uses synchronous comparison calculations only inside actual damage commands; comparison flags never cross an await. Two existing modifier counters skip these comparison calculations to avoid double counting. MightyWings only records strength gained; its extra-damage calculations, per-combat strength state and three related hooks have been removed. Existing strength counts remain visible, while legacy extra-damage/state keys are hidden. Polluted pre-fix Thumbscrew and Wuppy keys are not reused for the corrected metrics.
 
 ## Verification
 
 - Build against the installed v0.113.1 assembly: passed with zero warnings and errors.
-- 452 declared/manual Harmony target checks: passed.
+- 449 declared/manual Harmony target checks: passed.
 - Generated stats: 317 game relic types, 317 definitions; no missing types.
-- .NET 9 runtime mounting: all 443 patch classes mounted with no failures; all six save/history hooks and dynamic lifecycle hooks mounted.
+- .NET 9 runtime mounting: all 440 patch classes mounted with no failures; all six save/history hooks and dynamic lifecycle hooks mounted.
 - Core damage routing: all six affected groups patch the DamageTargetData core exactly once.
 - Cross-version saved-stat logic: 13 version/build cases passed using the production persistence source with an in-memory test store. Mismatched snapshots keep their original counters, text and provenance when loaded and re-saved; history uses archived display. This does not test running the current DLL on older game binaries.
-- English/Simplified Chinese: 186 matching nonblank entries with valid placeholders/tags; all 317 formatters passed 3,804 live/history/zero/populated output checks under eng -> zhs -> eng, including fallback and version banners. Official game PCK terms checked; Stretch, God Byrd, Abundance and Wah/Cho/Ki Chinese labels corrected, and ScrollBoxes Box 1/2 headings translated. Both packaged language files match the checked sources.
-- Manual-test feedback regression: 260 assertions passed with the production patch files linked into deterministic settlement fixtures. Cases cover repeated previews, Exterminate's fifth hit, early kills, Wuppy initialization/healing/overkill, asynchronous melody generation, Weak/Vulnerable, damage caps, enchantments and unrelated modifier counters. Baton mitigation includes damage saved for Wuppy and is counted before player block; Wuppy at 60/16/3/0 HP is covered. Bludgeon's first 32 damage grants 2 strength after the hit and has 0 bonus damage; a subsequent base-6 Strike deals 8 and credits 2 bonus damage. These fixtures do not host Godot gameplay.
+- English/Simplified Chinese: 185 matching nonblank entries with valid placeholders/tags; all 317 formatters passed 3,804 live/history/zero/populated output checks under eng -> zhs -> eng, including fallback and version banners. Official game PCK terms checked; Stretch, God Byrd, Abundance and Wah/Cho/Ki Chinese labels corrected, and ScrollBoxes Box 1/2 headings translated. Both packaged language files match the checked sources.
+- Manual-test feedback regression: 258 assertions passed with the production patch files linked into deterministic settlement fixtures. Cases cover repeated previews, Exterminate's fifth hit, early kills, Wuppy initialization/healing/overkill, asynchronous melody generation, damage caps and unrelated modifier counters. Baton mitigation includes damage saved for Wuppy and is counted before player block; Wuppy at 60/16/3/0 HP is covered. MightyWings records strength for eligible hits only; legacy Strength Gained: 4 is preserved while Extra Damage Dealt: 2 and the old per-combat state are hidden in live/history tooltips. These fixtures do not host Godot gameplay.
 - Full Godot-hosted combat, merchant UI and save/load gameplay have not been exercised.
 
 ## Complete method fingerprint differences
