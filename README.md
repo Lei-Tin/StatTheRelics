@@ -4,7 +4,7 @@
 
 Stat The Relics displays live and historical stat counters for relics in Slay the Spire 2. It appends usage data to relic tooltips and saves that data alongside run saves and run history.
 
-Current version: `1.0.9`
+Current version: `1.0.10`
 
 [Steam Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3750161122)
 
@@ -60,12 +60,12 @@ Stat snapshots include the Mod version and game build. After an update, older sn
 
 | Game version | Mod version | Support status |
 | --- | --- | --- |
-| `v0.113.1` | `1.0.9` | Current target; build, relic coverage and Harmony mounting checks passed. |
+| `v0.113.1` | `1.0.10` | Current target; build, relic coverage and Harmony mounting checks passed. |
 | `v0.110.1` | `1.0.8` | Supported by the previous release; not retested in this update. |
 | `v0.107.1` | `1.0.8` | Supported by the previous release; not retested in this update. |
 | Other game versions | — | Not verified; compatibility is not guaranteed. |
 
-Mod `1.0.9` requires game `v0.113.1` and does not support `v0.107.1` or `v0.110.1`. Its manifest declares `min_game_version: 0.113.1`; this is a lower bound for the loader, not a promise that every newer game build works. Full in-game combat, merchant UI and save/load testing has not been performed for this release.
+Mod `1.0.10` requires game `v0.113.1` and does not support `v0.107.1` or `v0.110.1`. Its manifest declares `min_game_version: 0.113.1`; this is a lower bound for the loader, not a promise that every newer game build works. Full in-game combat, merchant UI and save/load testing has not been performed for this release.
 
 Existing patch alternatives and optional hooks handle specific API differences. They do not make this DLL backward-compatible with games that lack its referenced relic types. Use the matching Mod release in the table rather than lowering the manifest's minimum version.
 
@@ -113,7 +113,7 @@ Create `local.props` in the project root:
     <ModDisplayName>Stat The Relics</ModDisplayName>
     <ModDescription>Displays stats for the various relics found in the spire</ModDescription>
     <ModAuthor>LeiT</ModAuthor>
-    <ModVersion>1.0.9</ModVersion>
+    <ModVersion>1.0.10</ModVersion>
     <MinGameVersion>0.113.1</MinGameVersion>
   </PropertyGroup>
 </Project>
