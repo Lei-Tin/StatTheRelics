@@ -50,8 +50,8 @@ namespace StatTheRelics.Patches.Relics {
             } catch { }
         }
 
-        static void Postfix(Task<IEnumerable<DamageResult>> __result, Dictionary<ConductorsBaton, int> __state) {
-            if (__result == null || __state.Count == 0) return;
+        static void Postfix(Task<IEnumerable<DamageResult>> __result, Dictionary<ConductorsBaton, int>? __state) {
+            if (__result == null || __state == null || __state.Count == 0) return;
             __result.ContinueWith(task => {
                 try {
                     if (task.Status != TaskStatus.RanToCompletion) return;
